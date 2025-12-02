@@ -1,5 +1,6 @@
 """FastAPI application with sleep debt endpoints."""
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -9,6 +10,11 @@ from backend.models import SleepStatusResponse, SyncResponse, SleepData
 from backend.config import API_HOST, API_PORT
 from db.database import init_database, read_sleep_data, get_sleep_statistics
 from etl.garmin_sync import sync_sleep_data
+
+# Get project root directory (parent of backend/)
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
+FRONTEND_HTML = FRONTEND_DIR / "index.html"
 
 
 @asynccontextmanager
@@ -35,13 +41,13 @@ app.add_middleware(
 )
 
 # Mount static files for frontend assets (after middleware, before routes)
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
+app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 
 @app.get("/")
 async def root():
     """Root endpoint - serve frontend HTML."""
-    with open("frontend/index.html", "r", encoding="utf-8") as f:
+    with open(FRONTEND_HTML, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
 
