@@ -1,64 +1,181 @@
-"""DuckDB database initialization and operations (stub)."""
+"""DuckDB database initialization and operations."""
+from __future__ import annotations
+
+from contextlib import contextmanager
+from dataclasses import dataclass
+from typing import Dict, Iterable, List
+
 import duckdb
 from pathlib import Path
 from backend.config import DB_PATH
 
 
-def init_database():
-    """Initialize DuckDB database and create tables."""
+@dataclass
+class SleepRecord:
+    """Typed representation of one sleep record stored in DuckDB."""
+
+    date: str          # ISO date (YYYY-MM-DD)
+    sleep_hours: float
+    target_hours: float
+    debt: float
+
+
+@contextmanager
+def get_connection():
+    """Yield a DuckDB connection and ensure it is closed."""
     # Ensure database directory exists
     Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
-    
-    # Connect to DuckDB
     conn = duckdb.connect(DB_PATH)
-    
-    # Create sleep_data table if it doesn't exist
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS sleep_data (
-            date DATE PRIMARY KEY,
-            sleep_hours REAL,
-            target_hours REAL,
-            debt REAL
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+def init_database() -> bool:
+    """Initialize DuckDB database and create tables if they do not exist."""
+    with get_connection() as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sleep_data (
+                date DATE PRIMARY KEY,
+                sleep_hours REAL,
+                target_hours REAL,
+                debt REAL
+            )
+            """
         )
-    """)
-    
-    conn.close()
     return True
 
 
-def write_sleep_data(date: str, sleep_hours: float, target_hours: float, debt: float):
-    """Write sleep data to database (stub - currently just logs)."""
-    # Stub implementation - in real version would insert/update in DuckDB
-    print(f"[STUB] Writing sleep data: date={date}, sleep={sleep_hours}h, target={target_hours}h, debt={debt}h")
+def write_sleep_data(date: str, sleep_hours: float, target_hours: float, debt: float) -> bool:
+    """Insert or update a single day's sleep data in DuckDB."""
+    record = SleepRecord(
+        date=date,
+        sleep_hours=sleep_hours,
+        target_hours=target_hours,
+        debt=debt,
+    )
+
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO sleep_data (date, sleep_hours, target_hours, debt)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT (date) DO UPDATE SET
+                sleep_hours = excluded.sleep_hours,
+                target_hours = excluded.target_hours,
+                debt = excluded.debt
+            """,
+            [record.date, record.sleep_hours, record.target_hours, record.debt],
+        )
+
     return True
 
 
-def read_sleep_data(limit: int = 30):
-    """Read recent sleep data from database (stub - returns fake data)."""
-    # Stub implementation - returns fake data
-    from datetime import datetime, timedelta
-    
-    fake_data = []
-    today = datetime.now()
-    for i in range(limit):
-        date = (today - timedelta(days=i)).strftime("%Y-%m-%d")
-        fake_data.append({
-            "date": date,
-            "sleep_hours": 7.5 + (i % 3) * 0.5,
-            "target_hours": 8.0,
-            "debt": -0.5 + (i % 2) * 1.0
-        })
-    
-    return fake_data
+def write_sleep_batch(records: Iterable[Dict]) -> int:
+    """Insert or update a batch of sleep records.
+
+    Args:
+        records: iterable of dicts with keys: date, sleep_hours, target_hours, debt
+
+    Returns:
+        Number of records written.
+    """
+    records_list: List[SleepRecord] = [
+        SleepRecord(
+            date=r["date"],
+            sleep_hours=float(r["sleep_hours"]),
+            target_hours=float(r["target_hours"]),
+            debt=float(r["debt"]),
+        )
+        for r in records
+    ]
+
+    if not records_list:
+        return 0
+
+    with get_connection() as conn:
+        conn.executemany(
+            """
+            INSERT INTO sleep_data (date, sleep_hours, target_hours, debt)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT (date) DO UPDATE SET
+                sleep_hours = excluded.sleep_hours,
+                target_hours = excluded.target_hours,
+                debt = excluded.debt
+            """,
+            [
+                (r.date, r.sleep_hours, r.target_hours, r.debt)
+                for r in records_list
+            ],
+        )
+
+    return len(records_list)
 
 
-def get_sleep_statistics():
-    """Get sleep statistics from database (stub - returns fake stats)."""
-    # Stub implementation
+def read_sleep_data(limit: int = 30) -> List[Dict]:
+    """Read recent sleep data from database ordered by date descending."""
+    with get_connection() as conn:
+        result = conn.execute(
+            """
+            SELECT
+                strftime('%Y-%m-%d', date) AS date,
+                sleep_hours,
+                target_hours,
+                debt
+            FROM sleep_data
+            ORDER BY date DESC
+            LIMIT ?
+            """,
+            [limit],
+        ).fetchall()
+
+    return [
+        {
+            "date": row[0],
+            "sleep_hours": float(row[1]),
+            "target_hours": float(row[2]),
+            "debt": float(row[3]),
+        }
+        for row in result
+    ]
+
+
+def get_sleep_statistics() -> Dict:
+    """Compute basic sleep statistics from data stored in DuckDB."""
+    with get_connection() as conn:
+        # Aggregate totals and counts
+        agg = conn.execute(
+            """
+            SELECT
+                COALESCE(SUM(sleep_hours), 0.0) AS total_sleep_hours,
+                COALESCE(SUM(target_hours), 0.0) AS total_target_hours,
+                COALESCE(SUM(debt), 0.0) AS total_debt,
+                COUNT(*) AS days_tracked
+            FROM sleep_data
+            """
+        ).fetchone()
+
+    total_sleep_hours = float(agg[0])
+    total_target_hours = float(agg[1])
+    total_debt = float(agg[2])
+    days_tracked = int(agg[3])
+
+    # If no data, expose neutral statistics
+    if days_tracked == 0:
+        return {
+            "total_sleep_hours": 0.0,
+            "target_sleep_hours": 0.0,
+            "current_debt": 0.0,
+            "days_tracked": 0,
+        }
+
     return {
-        "total_sleep_hours": 225.5,
-        "target_sleep_hours": 240.0,
-        "current_debt": 14.5,
-        "days_tracked": 30
+        "total_sleep_hours": total_sleep_hours,
+        "target_sleep_hours": total_target_hours,
+        "current_debt": total_debt,
+        "days_tracked": days_tracked,
     }
+
 
