@@ -24,12 +24,25 @@ source venv/bin/activate  # Su Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Copia il file di configurazione:
+4. Crea il file `.env` con le tue configurazioni:
 ```bash
-cp .env.example .env
-```
+# Database
+DB_PATH=data/sleep_debt.db
 
-5. Modifica `.env` con le tue configurazioni (opzionale per ora, tutto è stub)
+# Garmin Connect credentials (obbligatorie per sync reale)
+GARMIN_EMAIL=your-email@example.com
+GARMIN_PASSWORD=your-password
+
+# Target sonno in ore (opzionale, default: 8.0)
+TARGET_SLEEP_HOURS=8.0
+
+# Finestra di tempo per statistiche in giorni (opzionale, default: 7)
+STATS_WINDOW_DAYS=7
+
+# API configuration (opzionale)
+API_HOST=0.0.0.0
+API_PORT=8000
+```
 
 ## 🏃 Avvio
 
@@ -71,20 +84,27 @@ sleep-debt-app/
 - `GET /api/sleep/status` - Ottieni stato sleep e statistiche
 - `POST /api/sleep/sync` - Sincronizza dati da Garmin
 
-## 📝 Note
+## 📝 Stato Attuale
 
-Questo è un **prototipo minimale** con implementazioni stub:
-- Tutte le funzioni ETL ritornano dati finti
-- Il database DuckDB viene inizializzato ma le operazioni sono stub
-- L'integrazione Garmin è solo importata, non utilizzata realmente
+✅ **Completato:**
+- Database DuckDB completamente funzionante con persistenza reale
+- Integrazione Garmin Connect con autenticazione e fetch dati reali
+- Calcolo sleep debt giornaliero e cumulativo
+- Target sonno configurabile da `.env`
+- Dashboard con formattazione ore in formato "Xh Ym"
+- Gestione dati mancanti per giornata odierna
+
+🔄 **In sviluppo:**
+- Metriche aggiuntive (media settimanale, trend)
+- Grafici interattivi (Chart.js)
 
 ## 🔮 Prossimi Passi
 
-- Implementare fetch reale da Garmin Connect
-- Implementare calcolo reale del sleep debt
-- Implementare scrittura/lettura reale su DuckDB
-- Aggiungere grafici interattivi
+- Aggiungere grafici interattivi per visualizzare trend
+- Implementare metriche aggiuntive (media settimanale, trend)
 - Migliorare UI/UX
+- Testing completo
+- Deploy su Raspberry Pi
 
 ## 🖥️ Raspberry Pi
 

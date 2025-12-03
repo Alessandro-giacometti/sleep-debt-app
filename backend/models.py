@@ -21,6 +21,7 @@ class SleepStatusResponse(BaseModel):
     days_tracked: int
     recent_data: list[SleepData]
     has_today_data: bool  # True if sleep data exists for today
+    stats_window_days: int  # Number of days used for statistics calculation
 
 
 class SyncResponse(BaseModel):

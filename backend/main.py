@@ -93,8 +93,11 @@ async def get_sleep_status():
     # Get statistics (excludes today if no data available)
     stats = get_sleep_statistics()
     
-    # Get recent data
-    recent_data = read_sleep_data(limit=7)
+    # Get recent data (use same window as statistics)
+    from backend.config import STATS_WINDOW_DAYS
+    recent_data = read_sleep_data(limit=STATS_WINDOW_DAYS)
+    
+    from backend.config import STATS_WINDOW_DAYS
     
     return SleepStatusResponse(
         last_sync=datetime.now().isoformat(),
@@ -103,7 +106,8 @@ async def get_sleep_status():
         target_sleep_hours=stats["target_sleep_hours"],
         days_tracked=stats["days_tracked"],
         recent_data=[SleepData(**item) for item in recent_data],
-        has_today_data=stats["has_today_data"]
+        has_today_data=stats["has_today_data"],
+        stats_window_days=STATS_WINDOW_DAYS
     )
 
 

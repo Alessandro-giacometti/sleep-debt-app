@@ -19,3 +19,9 @@ GARMIN_PASSWORD = os.getenv("GARMIN_PASSWORD", "")
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
 
+# Sleep target configuration
+TARGET_SLEEP_HOURS = float(os.getenv("TARGET_SLEEP_HOURS", "8.0"))
+
+# Statistics window configuration (in days)
+STATS_WINDOW_DAYS = int(os.getenv("STATS_WINDOW_DAYS", "7"))
+

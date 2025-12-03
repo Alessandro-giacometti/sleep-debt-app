@@ -145,23 +145,29 @@ def read_sleep_data(limit: int = 7) -> List[Dict]:
 def get_sleep_statistics() -> Dict:
     """Compute basic sleep statistics from data stored in DuckDB.
     
+    Calculates statistics only for the configured window of days.
     Excludes today's data if it doesn't exist (to avoid calculating debt
     for an incomplete day).
     """
-    from datetime import date
+    from datetime import date, timedelta
+    from backend.config import STATS_WINDOW_DAYS
     
-    today = date.today().isoformat()
+    today = date.today()
+    window_start = today - timedelta(days=STATS_WINDOW_DAYS)
+    today_str = today.isoformat()
+    window_start_str = window_start.isoformat()
     
     with get_connection() as conn:
         # Check if today's data exists
         today_exists = conn.execute(
             "SELECT COUNT(*) FROM sleep_data WHERE date = ?",
-            [today]
+            [today_str]
         ).fetchone()[0] > 0
         
-        # Aggregate totals and counts, excluding today if it doesn't exist
+        # Aggregate totals and counts for the configured window
+        # Exclude today if it doesn't exist
         if today_exists:
-            # Include all data
+            # Include window including today
             agg = conn.execute(
                 """
                 SELECT
@@ -170,10 +176,12 @@ def get_sleep_statistics() -> Dict:
                     COALESCE(SUM(debt), 0.0) AS total_debt,
                     COUNT(*) AS days_tracked
                 FROM sleep_data
-                """
+                WHERE date >= ?
+                """,
+                [window_start_str]
             ).fetchone()
         else:
-            # Exclude today from calculations
+            # Include window excluding today
             agg = conn.execute(
                 """
                 SELECT
@@ -182,9 +190,9 @@ def get_sleep_statistics() -> Dict:
                     COALESCE(SUM(debt), 0.0) AS total_debt,
                     COUNT(*) AS days_tracked
                 FROM sleep_data
-                WHERE date < ?
+                WHERE date >= ? AND date < ?
                 """,
-                [today]
+                [window_start_str, today_str]
             ).fetchone()
 
     total_sleep_hours = float(agg[0])

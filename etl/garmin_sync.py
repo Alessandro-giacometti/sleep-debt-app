@@ -27,7 +27,9 @@ def _generate_fake_sleep_data(days: int) -> List[Dict]:
         date = today - timedelta(days=i)
         # Generate fake sleep data
         sleep_hours = 7.0 + (i % 4) * 0.5  # Varies between 7.0 and 8.5
-        target_hours = 8.0
+        # Import target from config
+        from backend.config import TARGET_SLEEP_HOURS
+        target_hours = TARGET_SLEEP_HOURS
         debt = calculate_daily_debt(sleep_hours, target_hours)
 
         fake_data.append(
@@ -138,7 +140,9 @@ def _fetch_garmin_sleep_data(days: int) -> List[Dict]:
     # Fetch sleep data for the specified period
     sleep_data: List[Dict] = []
     today = date.today()
-    target_hours = 8.0  # Default target, can be made configurable later
+    # Import target from config
+    from backend.config import TARGET_SLEEP_HOURS
+    target_hours = TARGET_SLEEP_HOURS
     
     logger.info(f"Fetching sleep data for last {days} days...")
     
