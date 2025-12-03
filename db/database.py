@@ -218,4 +218,3 @@ def get_sleep_statistics() -> Dict:
         "has_today_data": today_exists,
     }
 
-
