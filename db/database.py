@@ -114,8 +114,15 @@ def write_sleep_batch(records: Iterable[Dict]) -> int:
     return len(records_list)
 
 
-def read_sleep_data(limit: int = 7) -> List[Dict]:
-    """Read recent sleep data from database ordered by date descending."""
+def read_sleep_data(limit: int = None) -> List[Dict]:
+    """Read recent sleep data from database ordered by date descending.
+    
+    Args:
+        limit: Number of days to retrieve (defaults to STATS_WINDOW_DAYS from config)
+    """
+    from backend.config import STATS_WINDOW_DAYS
+    if limit is None:
+        limit = STATS_WINDOW_DAYS
     with get_connection() as conn:
         result = conn.execute(
             """

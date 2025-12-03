@@ -93,9 +93,8 @@ async def get_sleep_status():
     # Get statistics (excludes today if no data available)
     stats = get_sleep_statistics()
     
-    # Get recent data (use same window as statistics)
-    from backend.config import STATS_WINDOW_DAYS
-    recent_data = read_sleep_data(limit=STATS_WINDOW_DAYS)
+    # Get recent data (uses STATS_WINDOW_DAYS as default)
+    recent_data = read_sleep_data()
     
     from backend.config import STATS_WINDOW_DAYS
     
@@ -114,8 +113,9 @@ async def get_sleep_status():
 @app.post("/api/sleep/sync", response_model=SyncResponse)
 async def sync_sleep():
     """Trigger sleep data synchronization from Garmin."""
+    from backend.config import STATS_WINDOW_DAYS
     try:
-        result = sync_sleep_data(days=7)
+        result = sync_sleep_data(days=STATS_WINDOW_DAYS)
         
         return SyncResponse(
             success=result["success"],

@@ -376,18 +376,21 @@ def _parse_garmin_sleep_duration(garmin_sleep: Dict) -> Optional[float]:
     return None
 
 
-def sync_sleep_data(days: int = 7) -> Dict:
+def sync_sleep_data(days: int = None) -> Dict:
     """Sync sleep data from Garmin Connect and persist it to DuckDB.
     
     This function attempts to fetch real data from Garmin Connect.
     If credentials are missing or authentication fails, it falls back to fake data.
     
     Args:
-        days: Number of days to sync
+        days: Number of days to sync (defaults to STATS_WINDOW_DAYS from config)
         
     Returns:
         Dictionary with sync results
     """
+    from backend.config import STATS_WINDOW_DAYS
+    if days is None:
+        days = STATS_WINDOW_DAYS
     logger.info(f"Starting sleep data sync for last {days} days...")
     
     try:

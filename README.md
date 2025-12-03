@@ -69,10 +69,10 @@ sleep-debt-app/
 │   ├── config.py    # Configurazione
 │   └── models.py    # Modelli Pydantic
 ├── etl/             # ETL e calcoli
-│   ├── garmin_sync.py    # Sync dati Garmin (stub)
-│   └── sleep_debt.py     # Calcolo sleep debt (stub)
+│   ├── garmin_sync.py    # Sync dati Garmin
+│   └── sleep_debt.py     # Calcolo sleep debt
 ├── db/              # Database
-│   └── database.py  # DuckDB operations (stub)
+│   └── database.py  # DuckDB operations
 └── frontend/        # Frontend statico
     ├── index.html   # UI principale
     └── app.js       # JavaScript client

@@ -59,3 +59,5 @@ Thumbs.db
 # Garmin tokens
 .garminconnect/
 
+# Local documentation (not tracked)
+ROADMAP.md

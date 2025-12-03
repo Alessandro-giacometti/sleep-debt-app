@@ -23,10 +23,11 @@ def calculate_sleep_debt(sleep_data: List[Dict]) -> float:
         total_debt = sum(record.get('debt', 0.0) for record in sleep_data)
     else:
         # Calculate debt from sleep_hours and target_hours if debt not present
+        from backend.config import TARGET_SLEEP_HOURS
         total_debt = sum(
             calculate_daily_debt(
                 record.get('sleep_hours', 0.0),
-                record.get('target_hours', 8.0)
+                record.get('target_hours', TARGET_SLEEP_HOURS)
             )
             for record in sleep_data
         )
