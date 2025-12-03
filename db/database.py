@@ -114,7 +114,7 @@ def write_sleep_batch(records: Iterable[Dict]) -> int:
     return len(records_list)
 
 
-def read_sleep_data(limit: int = 30) -> List[Dict]:
+def read_sleep_data(limit: int = 7) -> List[Dict]:
     """Read recent sleep data from database ordered by date descending."""
     with get_connection() as conn:
         result = conn.execute(
@@ -143,19 +143,49 @@ def read_sleep_data(limit: int = 30) -> List[Dict]:
 
 
 def get_sleep_statistics() -> Dict:
-    """Compute basic sleep statistics from data stored in DuckDB."""
+    """Compute basic sleep statistics from data stored in DuckDB.
+    
+    Excludes today's data if it doesn't exist (to avoid calculating debt
+    for an incomplete day).
+    """
+    from datetime import date
+    
+    today = date.today().isoformat()
+    
     with get_connection() as conn:
-        # Aggregate totals and counts
-        agg = conn.execute(
-            """
-            SELECT
-                COALESCE(SUM(sleep_hours), 0.0) AS total_sleep_hours,
-                COALESCE(SUM(target_hours), 0.0) AS total_target_hours,
-                COALESCE(SUM(debt), 0.0) AS total_debt,
-                COUNT(*) AS days_tracked
-            FROM sleep_data
-            """
-        ).fetchone()
+        # Check if today's data exists
+        today_exists = conn.execute(
+            "SELECT COUNT(*) FROM sleep_data WHERE date = ?",
+            [today]
+        ).fetchone()[0] > 0
+        
+        # Aggregate totals and counts, excluding today if it doesn't exist
+        if today_exists:
+            # Include all data
+            agg = conn.execute(
+                """
+                SELECT
+                    COALESCE(SUM(sleep_hours), 0.0) AS total_sleep_hours,
+                    COALESCE(SUM(target_hours), 0.0) AS total_target_hours,
+                    COALESCE(SUM(debt), 0.0) AS total_debt,
+                    COUNT(*) AS days_tracked
+                FROM sleep_data
+                """
+            ).fetchone()
+        else:
+            # Exclude today from calculations
+            agg = conn.execute(
+                """
+                SELECT
+                    COALESCE(SUM(sleep_hours), 0.0) AS total_sleep_hours,
+                    COALESCE(SUM(target_hours), 0.0) AS total_target_hours,
+                    COALESCE(SUM(debt), 0.0) AS total_debt,
+                    COUNT(*) AS days_tracked
+                FROM sleep_data
+                WHERE date < ?
+                """,
+                [today]
+            ).fetchone()
 
     total_sleep_hours = float(agg[0])
     total_target_hours = float(agg[1])
@@ -169,6 +199,7 @@ def get_sleep_statistics() -> Dict:
             "target_sleep_hours": 0.0,
             "current_debt": 0.0,
             "days_tracked": 0,
+            "has_today_data": today_exists,
         }
 
     return {
@@ -176,6 +207,7 @@ def get_sleep_statistics() -> Dict:
         "target_sleep_hours": total_target_hours,
         "current_debt": total_debt,
         "days_tracked": days_tracked,
+        "has_today_data": today_exists,
     }
 
 

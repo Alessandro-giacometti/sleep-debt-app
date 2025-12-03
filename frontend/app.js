@@ -29,10 +29,18 @@ async function loadSleepStatus() {
  */
 function updateUI(data) {
     // Update stats
-    document.getElementById('current-debt').textContent = formatNumber(data.current_debt);
-    document.getElementById('total-sleep').textContent = formatNumber(data.total_sleep_hours);
-    document.getElementById('target-sleep').textContent = formatNumber(data.target_sleep_hours);
+    document.getElementById('current-debt').textContent = formatHoursMinutes(data.current_debt);
+    document.getElementById('total-sleep').textContent = formatHoursMinutes(data.total_sleep_hours);
+    document.getElementById('target-sleep').textContent = formatHoursMinutes(data.target_sleep_hours);
     document.getElementById('days-tracked').textContent = data.days_tracked;
+
+    // Show/hide missing data warning
+    const missingDataWarning = document.getElementById('missing-data-warning');
+    if (data.has_today_data === false) {
+        missingDataWarning.style.display = 'block';
+    } else {
+        missingDataWarning.style.display = 'none';
+    }
 
     // Update last sync
     if (data.last_sync) {
@@ -74,12 +82,12 @@ function updateDataTable(data) {
     tbody.innerHTML = data.map(item => `
         <tr>
             <td>${formatDate(item.date)}</td>
-            <td>${formatNumber(item.sleep_hours)}h</td>
-            <td>${formatNumber(item.target_hours)}h</td>
+            <td>${formatHoursMinutes(item.sleep_hours)}</td>
+            <td>${formatHoursMinutes(item.target_hours)}</td>
             <td>
                 <span class="${item.debt > 0 ? 'debt-positive' : 'debt-negative'}" 
                       style="padding: 4px 8px; border-radius: 12px; font-size: 0.85rem;">
-                    ${item.debt > 0 ? '+' : ''}${formatNumber(item.debt)}h
+                    ${item.debt > 0 ? '+' : ''}${formatHoursMinutes(item.debt)}
                 </span>
             </td>
         </tr>
@@ -157,6 +165,30 @@ function showSuccess(message) {
  */
 function formatNumber(num) {
     return parseFloat(num).toFixed(1);
+}
+
+/**
+ * Format hours (decimal) as hours and minutes (e.g., 4.82 -> "4h 49m")
+ */
+function formatHoursMinutes(hours) {
+    const h = parseFloat(hours);
+    const hoursInt = Math.floor(Math.abs(h));
+    const minutes = Math.round((Math.abs(h) - hoursInt) * 60);
+    
+    // Handle negative values (for debt)
+    const sign = h < 0 ? '-' : '';
+    
+    // If hours is 0 and minutes is 0, show 0h
+    if (hoursInt === 0 && minutes === 0) {
+        return '0h';
+    }
+    
+    // Format: "Xh Ym" or just "Xh" if minutes is 0
+    if (minutes === 0) {
+        return `${sign}${hoursInt}h`;
+    } else {
+        return `${sign}${hoursInt}h ${minutes}m`;
+    }
 }
 
 /**

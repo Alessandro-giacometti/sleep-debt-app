@@ -20,6 +20,7 @@ class SleepStatusResponse(BaseModel):
     target_sleep_hours: float
     days_tracked: int
     recent_data: list[SleepData]
+    has_today_data: bool  # True if sleep data exists for today
 
 
 class SyncResponse(BaseModel):

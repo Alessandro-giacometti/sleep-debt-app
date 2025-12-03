@@ -11,7 +11,7 @@ DB_PATH = os.getenv("DB_PATH", "data/sleep_debt.db")
 DB_DIR = Path(DB_PATH).parent
 DB_DIR.mkdir(parents=True, exist_ok=True)
 
-# Garmin credentials (stub for now)
+# Garmin credentials
 GARMIN_EMAIL = os.getenv("GARMIN_EMAIL", "")
 GARMIN_PASSWORD = os.getenv("GARMIN_PASSWORD", "")
 

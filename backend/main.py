@@ -1,4 +1,5 @@
 """FastAPI application with sleep debt endpoints."""
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI
@@ -6,10 +7,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from datetime import datetime
+from starlette.staticfiles import StaticFiles as StarletteStaticFiles
 from backend.models import SleepStatusResponse, SyncResponse, SleepData
 from backend.config import API_HOST, API_PORT
 from db.database import init_database, read_sleep_data, get_sleep_statistics
 from etl.garmin_sync import sync_sleep_data
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 # Get project root directory (parent of backend/)
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
@@ -40,24 +48,52 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Custom StaticFiles class that disables caching during development
+class NoCacheStaticFiles(StarletteStaticFiles):
+    """StaticFiles with no-cache headers for development."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    async def __call__(self, scope, receive, send):
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                # Add no-cache headers
+                headers = dict(message.get("headers", []))
+                headers[b"cache-control"] = b"no-cache, no-store, must-revalidate"
+                headers[b"pragma"] = b"no-cache"
+                headers[b"expires"] = b"0"
+                message["headers"] = list(headers.items())
+            await send(message)
+        
+        await super().__call__(scope, receive, send_wrapper)
+
 # Mount static files for frontend assets (after middleware, before routes)
-app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
+app.mount("/static", NoCacheStaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 
 @app.get("/")
 async def root():
     """Root endpoint - serve frontend HTML."""
     with open(FRONTEND_HTML, "r", encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
+        content = f.read()
+    # Add no-cache headers to prevent browser caching during development
+    return HTMLResponse(
+        content=content,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 
 @app.get("/api/sleep/status", response_model=SleepStatusResponse)
 async def get_sleep_status():
     """Get current sleep status and statistics."""
-    # Get statistics (stub)
+    # Get statistics (excludes today if no data available)
     stats = get_sleep_statistics()
     
-    # Get recent data (stub)
+    # Get recent data
     recent_data = read_sleep_data(limit=7)
     
     return SleepStatusResponse(
@@ -66,7 +102,8 @@ async def get_sleep_status():
         total_sleep_hours=stats["total_sleep_hours"],
         target_sleep_hours=stats["target_sleep_hours"],
         days_tracked=stats["days_tracked"],
-        recent_data=[SleepData(**item) for item in recent_data]
+        recent_data=[SleepData(**item) for item in recent_data],
+        has_today_data=stats["has_today_data"]
     )
 
 
@@ -74,11 +111,11 @@ async def get_sleep_status():
 async def sync_sleep():
     """Trigger sleep data synchronization from Garmin."""
     try:
-        result = sync_sleep_data(days=30)
+        result = sync_sleep_data(days=7)
         
         return SyncResponse(
             success=result["success"],
-            message=f"Synced {result['records_synced']} records",
+            message=result.get("message", f"Synced {result['records_synced']} records"),
             records_synced=result["records_synced"],
             last_sync=result["last_sync"]
         )

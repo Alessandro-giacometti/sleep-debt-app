@@ -56,3 +56,6 @@ Thumbs.db
 *.duckdb
 *.duckdb.wal
 
+# Garmin tokens
+.garminconnect/
+
