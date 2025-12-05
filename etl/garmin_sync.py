@@ -408,9 +408,15 @@ def sync_sleep_data(days: int = None) -> Dict:
             
             logger.info(f"Sync complete: {records_written} records written to DuckDB")
             
+            # Build message indicating requested window vs actual records
+            if records_written < days:
+                message = f"Synced {records_written} records from Garmin Connect (requested {days} days window - some days may not have data yet)"
+            else:
+                message = f"Synced {records_written} records from Garmin Connect ({days} days window)"
+            
             return {
                 "success": True,
-                "message": f"Synced {records_written} records from Garmin Connect",
+                "message": message,
                 "records_synced": records_written,
                 "last_sync": datetime.now().isoformat(),
                 "total_debt": total_debt,
@@ -443,9 +449,15 @@ def sync_sleep_data(days: int = None) -> Dict:
         
         logger.info(f"Fallback sync complete: {records_written} fake records written to DuckDB")
         
+        # Build message indicating requested window vs actual records
+        if records_written < days:
+            message = f"Garmin sync failed ({str(e)}). Using fake data for now. {records_written} records synced (requested {days} days window - some days may not have data yet)"
+        else:
+            message = f"Garmin sync failed ({str(e)}). Using fake data for now. {records_written} records synced ({days} days window)"
+        
         return {
             "success": True,
-            "message": f"Garmin sync failed ({str(e)}). Using fake data for now. {records_written} records synced.",
+            "message": message,
             "records_synced": records_written,
             "last_sync": datetime.now().isoformat(),
             "total_debt": total_debt,
@@ -473,9 +485,15 @@ def sync_sleep_data(days: int = None) -> Dict:
         
         logger.info(f"Fallback sync complete: {records_written} fake records written to DuckDB")
         
+        # Build message indicating requested window vs actual records
+        if records_written < days:
+            message = f"Unexpected error during Garmin sync ({str(e)}). Using fake data for now. {records_written} records synced (requested {days} days window - some days may not have data yet)"
+        else:
+            message = f"Unexpected error during Garmin sync ({str(e)}). Using fake data for now. {records_written} records synced ({days} days window)"
+        
         return {
             "success": True,
-            "message": f"Unexpected error during Garmin sync ({str(e)}). Using fake data for now. {records_written} records synced.",
+            "message": message,
             "records_synced": records_written,
             "last_sync": datetime.now().isoformat(),
             "total_debt": total_debt,

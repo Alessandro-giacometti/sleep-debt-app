@@ -9,8 +9,11 @@ from fastapi.staticfiles import StaticFiles
 from datetime import datetime
 from starlette.staticfiles import StaticFiles as StarletteStaticFiles
 from backend.models import SleepStatusResponse, SyncResponse, SleepData
-from backend.config import API_HOST, API_PORT
-from db.database import init_database, read_sleep_data, get_sleep_statistics
+from backend.config import API_HOST, API_PORT, CORS_ORIGINS, ENVIRONMENT
+from db.database import (
+    init_database, read_sleep_data, get_sleep_statistics,
+    get_last_sync_time, set_last_sync_time
+)
 from etl.garmin_sync import sync_sleep_data
 
 # Configure logging
@@ -39,14 +42,26 @@ async def lifespan(app: FastAPI):
 # Initialize FastAPI app
 app = FastAPI(title="Sleep Debt Tracker", version="0.1.0", lifespan=lifespan)
 
-# Enable CORS for local development
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Enable CORS based on environment
+# Note: Same-origin requests don't require CORS middleware - they work by default
+# CORS is only needed for cross-origin requests
+if CORS_ORIGINS is None:
+    # Same-origin only: don't add CORS middleware
+    # Same-origin requests will work without CORS
+    # Cross-origin requests will be blocked (browser default behavior)
+    pass  # No CORS middleware needed for same-origin only
+elif len(CORS_ORIGINS) == 0:
+    # Explicitly empty list: same as None - same-origin only, no CORS middleware
+    pass  # No CORS middleware needed for same-origin only
+else:
+    # Specific origins configured: add CORS middleware with those origins
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Custom StaticFiles class that disables caching during development
 class NoCacheStaticFiles(StarletteStaticFiles):
@@ -96,10 +111,13 @@ async def get_sleep_status():
     # Get recent data (uses STATS_WINDOW_DAYS as default)
     recent_data = read_sleep_data()
     
+    # Get actual last sync time from database, or None if no sync has been performed
+    last_sync = get_last_sync_time()
+    
     from backend.config import STATS_WINDOW_DAYS
     
     return SleepStatusResponse(
-        last_sync=datetime.now().isoformat(),
+        last_sync=last_sync,
         current_debt=stats["current_debt"],
         total_sleep_hours=stats["total_sleep_hours"],
         target_sleep_hours=stats["target_sleep_hours"],
@@ -117,18 +135,28 @@ async def sync_sleep():
     try:
         result = sync_sleep_data(days=STATS_WINDOW_DAYS)
         
+        # Save the actual sync timestamp to database
+        if result.get("success") and "last_sync" in result:
+            set_last_sync_time(result["last_sync"])
+        
+        # Ensure last_sync is present in response
+        last_sync = result.get("last_sync", datetime.now().isoformat())
+        
         return SyncResponse(
-            success=result["success"],
-            message=result.get("message", f"Synced {result['records_synced']} records"),
-            records_synced=result["records_synced"],
-            last_sync=result["last_sync"]
+            success=result.get("success", False),
+            message=result.get("message", f"Synced {result.get('records_synced', 0)} records"),
+            records_synced=result.get("records_synced", 0),
+            last_sync=last_sync
         )
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Sync error: {str(e)}", exc_info=True)
         return SyncResponse(
             success=False,
             message=f"Sync failed: {str(e)}",
             records_synced=0,
-            last_sync=datetime.now().isoformat()
+            last_sync=get_last_sync_time() or datetime.now().isoformat()
         )
 
 

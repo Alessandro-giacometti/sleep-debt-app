@@ -42,7 +42,16 @@ function updateUI(data) {
 
     // Show/hide missing data warning
     const missingDataWarning = document.getElementById('missing-data-warning');
+    const missingDataMessage = document.getElementById('missing-data-message');
     if (data.has_today_data === false) {
+        // Format today's date in Italian
+        const today = new Date();
+        const todayFormatted = today.toLocaleDateString('it-IT', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+        missingDataMessage.textContent = `Non ci sono ancora dati di sonno per oggi ${todayFormatted}. Il calcolo del debito esclude la giornata odierna fino a quando non saranno disponibili i dati.`;
         missingDataWarning.style.display = 'block';
     } else {
         missingDataWarning.style.display = 'none';
