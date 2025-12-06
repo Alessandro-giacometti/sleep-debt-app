@@ -72,6 +72,11 @@ echo "Creating data directory..."
 mkdir -p data
 chmod 755 data
 
+# Make helper scripts executable
+if [ -f "scripts/start-service.sh" ]; then
+    chmod +x scripts/start-service.sh
+fi
+
 # Copy .env.example to .env if .env doesn't exist
 if [ ! -f ".env" ]; then
     echo "Creating .env from .env.example..."
@@ -98,8 +103,20 @@ if [ "$IS_ROOT" = true ]; then
         systemctl daemon-reload
         systemctl enable $SERVICE_NAME
         echo "Service installed and enabled"
-        echo "To start the service: sudo systemctl start $SERVICE_NAME"
-        echo "To check status: sudo systemctl status $SERVICE_NAME"
+        
+        # Start service and verify it's running
+        echo "Starting service..."
+        systemctl start $SERVICE_NAME
+        sleep 2  # Wait a moment for service to start
+        
+        if systemctl is-active --quiet $SERVICE_NAME; then
+            echo "✓ Service started successfully!"
+            echo "Service status:"
+            systemctl status $SERVICE_NAME --no-pager -l
+        else
+            echo "✗ Service failed to start. Check logs with: sudo journalctl -u $SERVICE_NAME -n 50"
+            exit 1
+        fi
     else
         echo "Warning: scripts/sleep-debt-app.service not found"
     fi
@@ -113,8 +130,8 @@ echo "Next steps:"
 echo "1. Edit $APP_DIR/.env with your Garmin credentials"
 echo "2. Set ENVIRONMENT=prod in .env"
 if [ "$IS_ROOT" = true ]; then
-    echo "3. Start the service: sudo systemctl start $SERVICE_NAME"
-    echo "4. Check logs: sudo journalctl -u $SERVICE_NAME -f"
+    echo "3. Service should already be running. Check logs: sudo journalctl -u $SERVICE_NAME -f"
+    echo "4. To restart: sudo systemctl restart $SERVICE_NAME"
 else
     echo "3. Run manually: cd $APP_DIR && source venv/bin/activate && python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000"
 fi

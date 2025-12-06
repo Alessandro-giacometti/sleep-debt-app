@@ -171,6 +171,38 @@ sudo systemctl restart sleep-debt-app
 sudo systemctl stop sleep-debt-app
 ```
 
+### Helper Script per Avvio Servizio
+
+Per avviare il servizio con conferma automatica dello stato, usa lo script helper:
+
+```bash
+cd /opt/sleep-debt-app
+./scripts/start-service.sh
+```
+
+Lo script avvia il servizio, attende 2 secondi, verifica che sia attivo e mostra lo stato. Se il servizio non parte, mostra automaticamente gli ultimi log.
+
+### Limiti di Restart Automatico
+
+Il servizio è configurato con limiti di restart per prevenire loop infiniti in caso di errori:
+
+- **Restart policy:** `on-failure` (riavvia solo in caso di errore, non quando si ferma manualmente)
+- **Limite tentativi:** Massimo 3 tentativi di restart in una finestra di 5 minuti
+- **Dopo il limite:** Il servizio si ferma e richiede intervento manuale
+
+Se il servizio raggiunge il limite di restart, controlla i log per identificare il problema:
+
+```bash
+sudo journalctl -u sleep-debt-app -n 100
+```
+
+Poi riavvia manualmente dopo aver risolto il problema:
+
+```bash
+sudo systemctl reset-failed sleep-debt-app
+sudo systemctl start sleep-debt-app
+```
+
 ---
 
 ## Workflow di Deploy
@@ -209,6 +241,12 @@ git pull origin main
 4. Riavvia il servizio:
 ```bash
 sudo systemctl restart sleep-debt-app
+```
+
+Oppure usa lo script helper per avviare con verifica automatica:
+```bash
+cd /opt/sleep-debt-app
+./scripts/start-service.sh
 ```
 
 5. Verifica che tutto funzioni:
@@ -263,6 +301,18 @@ hostname -I
 1. Controlla i log:
 ```bash
 sudo journalctl -u sleep-debt-app -n 50
+```
+
+2. Se il servizio ha raggiunto il limite di restart (3 tentativi in 5 minuti), resetta il contatore:
+```bash
+sudo systemctl reset-failed sleep-debt-app
+sudo systemctl start sleep-debt-app
+```
+
+3. Usa lo script helper per avviare con verifica automatica:
+```bash
+cd /opt/sleep-debt-app
+./scripts/start-service.sh
 ```
 
 2. Verifica che il virtual environment sia corretto:

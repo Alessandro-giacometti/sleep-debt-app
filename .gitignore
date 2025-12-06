@@ -30,6 +30,7 @@ ENV/
 .env
 .env.local
 .env.*.local
+!.env.example  # Explicitly track .env.example
 
 # IDE
 .vscode/
