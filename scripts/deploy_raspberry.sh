@@ -9,9 +9,20 @@ APP_DIR="/opt/sleep-debt-app"
 REPO_URL="${REPO_URL:-https://github.com/yourusername/sleep-debt-app.git}"
 BRANCH="${BRANCH:-main}"
 SERVICE_NAME="sleep-debt-app"
-USER="${USER:-pi}"
+
+# Detect user: prefer DEPLOY_USER env var, then SUDO_USER (when using sudo), then USER, then fallback
+if [ -n "$DEPLOY_USER" ]; then
+    USER="$DEPLOY_USER"
+elif [ -n "$SUDO_USER" ]; then
+    USER="$SUDO_USER"
+elif [ -n "$USER" ] && [ "$USER" != "root" ]; then
+    USER="$USER"
+else
+    USER="pi"  # Fallback
+fi
 
 echo "=== Sleep Debt Tracker - Raspberry Pi Deploy ==="
+echo "Using user: $USER"
 
 # Check if running as root for system operations
 if [ "$EUID" -ne 0 ]; then 

@@ -49,13 +49,16 @@ sudo apt install -y python3 python3-pip python3-venv git
 ### 3. Clonare Repository
 
 ```bash
+# Sostituisci 'alessandro' con il tuo nome utente se diverso
 sudo mkdir -p /opt/sleep-debt-app
-sudo chown pi:pi /opt/sleep-debt-app
+sudo chown alessandro:alessandro /opt/sleep-debt-app
 cd /opt/sleep-debt-app
 git clone -b main https://github.com/yourusername/sleep-debt-app.git .
 ```
 
-**Nota:** Sostituisci `yourusername` con il tuo username GitHub e assicurati che il repository sia pubblico o che tu abbia configurato le chiavi SSH.
+**Nota:** 
+- Sostituisci `yourusername` con il tuo username GitHub e assicurati che il repository sia pubblico o che tu abbia configurato le chiavi SSH.
+- Sostituisci `alessandro` con il tuo nome utente se diverso.
 
 ### 4. Setup Automatico con Script
 
@@ -64,6 +67,13 @@ Esegui lo script di deploy:
 ```bash
 cd /opt/sleep-debt-app
 sudo bash scripts/deploy_raspberry.sh
+```
+
+Lo script rileva automaticamente il tuo nome utente. Se necessario, puoi passarlo esplicitamente come variabile d'ambiente:
+
+```bash
+# Se il tuo utente è diverso da quello rilevato automaticamente
+sudo DEPLOY_USER=alessandro bash scripts/deploy_raspberry.sh
 ```
 
 Lo script:
