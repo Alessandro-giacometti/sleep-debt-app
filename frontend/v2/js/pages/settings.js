@@ -1,10 +1,47 @@
 // Sleep Debt Tracker v2 - Settings Page Logic
 
 /**
- * Selettore finestra giorni (solo UI)
+ * Aggiorna UI delle impostazioni con i valori correnti
+ */
+function updateSettingsUI(settings) {
+    // Aggiorna valore finestra giorni
+    const windowValueEl = document.getElementById('settings-window-value');
+    if (windowValueEl && settings.stats_window_days) {
+        windowValueEl.textContent = `${settings.stats_window_days} giorni`;
+    }
+    
+    // Aggiorna valore target sonno (formato completo con ore e minuti)
+    const targetValueEl = document.getElementById('settings-target-value');
+    if (targetValueEl && settings.target_sleep_hours) {
+        const { hours, minutes } = decimalToHoursMinutes(settings.target_sleep_hours);
+        if (minutes === 0) {
+            targetValueEl.textContent = `${hours}h`;
+        } else {
+            targetValueEl.textContent = `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+        }
+    }
+    
+    // Aggiorna selettore finestra giorni (attiva il bottone corretto)
+    const windowDays = settings.stats_window_days || 7;
+    document.querySelectorAll('.pill-btn').forEach(btn => {
+        btn.classList.remove('active');
+        const btnDays = parseInt(btn.textContent.replace(' giorni', ''));
+        if (btnDays === windowDays) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Aggiorna picker target sonno SOLO se la sub-pagina NON è attiva
+    // (per evitare di sovrascrivere il valore che l'utente sta modificando)
+    // Nota: il picker scrollabile viene inizializzato quando si apre la sub-pagina
+    // quindi non serve aggiornarlo qui
+}
+
+/**
+ * Selettore finestra giorni (solo UI, non salva)
  */
 function selectWindow(days) {
-    // currentWindow è definito in app.js
+    // Aggiorna UI
     if (window.currentWindow !== undefined) {
         window.currentWindow = days;
     }
@@ -27,21 +64,661 @@ function toggleWeight() {
 }
 
 /**
- * Salva impostazioni (solo UI per ora)
+ * Converti decimal hours a hours e minutes
+ * Arrotonda correttamente i minuti senza limiti ai multipli di 15
  */
-function saveSettings() {
-    // TODO: Implementare salvataggio quando backend sarà pronto
-    alert('Impostazioni salvate! (UI only - backend integration pending)');
+function decimalToHoursMinutes(decimalHours) {
+    // Assicurati che decimalHours sia un numero
+    const numHours = Number(decimalHours);
+    if (isNaN(numHours)) {
+        console.error('decimalToHoursMinutes: invalid input', decimalHours);
+        return { hours: 0, minutes: 0 };
+    }
+    
+    const hours = Math.floor(Math.abs(numHours));
+    const decimalMinutes = (Math.abs(numHours) - hours) * 60;
+    // Arrotonda i minuti al numero intero più vicino
+    const minutes = Math.round(decimalMinutes);
+    // Se arrotondato a 60, passa all'ora successiva
+    if (minutes >= 60) {
+        return { hours: hours + 1, minutes: 0 };
+    }
+    
+    return { hours, minutes };
+}
+
+/**
+ * Converti hours e minutes a decimal hours
+ */
+function hoursMinutesToDecimal(hours, minutes) {
+    return hours + (minutes / 60);
+}
+
+// Variabili per gestire i listener degli scroll
+let hoursScrollHandler = null;
+let minutesScrollHandler = null;
+
+/**
+ * Inizializza picker scrollabile target
+ */
+async function initTargetPicker() {
+    // Ottieni valore corrente - carica sempre dalle settings per avere il valore più aggiornato
+    let targetHours = 8.0;
+    
+    try {
+        const response = await fetch(`${window.location.origin}/api/settings`);
+        if (response.ok) {
+            const settings = await response.json();
+            targetHours = settings.target_sleep_hours || 8.0;
+            // Aggiorna anche window.sleepData per future chiamate
+            if (!window.sleepData) {
+                window.sleepData = {};
+            }
+            window.sleepData.target_sleep_hours = targetHours;
+        } else {
+            // Fallback a window.sleepData se la chiamata API fallisce
+            if (window.sleepData && window.sleepData.target_sleep_hours) {
+                targetHours = window.sleepData.target_sleep_hours;
+            }
+        }
+    } catch (error) {
+        console.warn('Could not load settings for picker initialization:', error);
+        // Fallback a window.sleepData se la chiamata API fallisce
+        if (window.sleepData && window.sleepData.target_sleep_hours) {
+            targetHours = window.sleepData.target_sleep_hours;
+        }
+    }
+    
+    // Converti in ore e minuti
+    const converted = decimalToHoursMinutes(targetHours);
+    let currentHours = converted.hours;
+    // Arrotonda i minuti al multiplo di 15 più vicino
+    let currentMinutes = Math.round(converted.minutes / 15) * 15;
+    if (currentMinutes >= 60) {
+        currentMinutes = 0;
+        currentHours += 1;
+    }
+    
+    
+    // Crea picker ore (0-24)
+    const hoursContent = document.getElementById('target-hours-content');
+    const hoursScroll = document.getElementById('target-hours-scroll');
+    if (hoursContent && hoursScroll) {
+        // Rimuovi listener vecchio se esiste
+        if (hoursScrollHandler) {
+            hoursScroll.removeEventListener('scroll', hoursScrollHandler);
+        }
+        
+        hoursContent.innerHTML = '';
+        let selectedHourElement = null;
+        for (let h = 0; h <= 24; h++) {
+            const item = document.createElement('div');
+            item.className = 'target-picker-item';
+            item.textContent = `${h}h`;
+            item.dataset.value = h;
+            if (h === currentHours) {
+                item.classList.add('selected');
+                selectedHourElement = item; // Salva riferimento all'elemento selezionato
+            }
+            item.onclick = () => selectTargetHour(h);
+            hoursContent.appendChild(item);
+        }
+        // Scrolla all'elemento selezionato - usa il riferimento salvato invece di querySelector
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    if (selectedHourElement && selectedHourElement.parentNode === hoursContent) {
+                        // Calcola la posizione manualmente per un controllo migliore
+                        const scrollPosition = selectedHourElement.offsetTop - (hoursScroll.offsetHeight / 2) + (selectedHourElement.offsetHeight / 2);
+                        hoursScroll.scrollTop = scrollPosition;
+                        
+                        // Verifica che lo scroll sia stato applicato, altrimenti riprova
+                        setTimeout(() => {
+                            const currentScroll = hoursScroll.scrollTop;
+                            const expectedScroll = scrollPosition;
+                            const tolerance = 10; // 10px di tolleranza
+                            if (Math.abs(currentScroll - expectedScroll) > tolerance) {
+                                hoursScroll.scrollTop = scrollPosition;
+                            }
+                        }, 50);
+                    } else {
+                        // Fallback: usa querySelector
+                        const selected = hoursContent.querySelector('.selected');
+                        if (selected) {
+                            const scrollPosition = selected.offsetTop - (hoursScroll.offsetHeight / 2) + (selected.offsetHeight / 2);
+                            hoursScroll.scrollTop = scrollPosition;
+                        }
+                    }
+                }, 150);
+            });
+        });
+        
+        // Listener per scroll manuale
+        hoursScrollHandler = () => updateSelectedOnScroll(hoursScroll, 'hours');
+        hoursScroll.addEventListener('scroll', hoursScrollHandler);
+    }
+    
+    // Crea picker minuti (solo multipli di 15: 0, 15, 30, 45)
+    const minutesContent = document.getElementById('target-minutes-content');
+    const minutesScroll = document.getElementById('target-minutes-scroll');
+    if (minutesContent && minutesScroll) {
+        // Rimuovi listener vecchio se esiste
+        if (minutesScrollHandler) {
+            minutesScroll.removeEventListener('scroll', minutesScrollHandler);
+        }
+        
+        minutesContent.innerHTML = '';
+        // Arrotonda currentMinutes al multiplo di 15 più vicino
+        const roundedMinutes = Math.round(currentMinutes / 15) * 15;
+        const minuteOptions = [0, 15, 30, 45];
+        let selectedMinuteElement = null;
+        for (const m of minuteOptions) {
+            const item = document.createElement('div');
+            item.className = 'target-picker-item';
+            item.textContent = `${m.toString().padStart(2, '0')}min`;
+            item.dataset.value = m;
+            if (m === roundedMinutes) {
+                item.classList.add('selected');
+                selectedMinuteElement = item; // Salva riferimento all'elemento selezionato
+            }
+            item.onclick = () => selectTargetMinute(m);
+            minutesContent.appendChild(item);
+        }
+        // Scrolla all'elemento selezionato - usa il riferimento salvato invece di querySelector
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    if (selectedMinuteElement && selectedMinuteElement.parentNode === minutesContent) {
+                        // Calcola la posizione manualmente per un controllo migliore
+                        const scrollPosition = selectedMinuteElement.offsetTop - (minutesScroll.offsetHeight / 2) + (selectedMinuteElement.offsetHeight / 2);
+                        minutesScroll.scrollTop = scrollPosition;
+                        
+                        // Verifica che lo scroll sia stato applicato, altrimenti riprova
+                        setTimeout(() => {
+                            const currentScroll = minutesScroll.scrollTop;
+                            const expectedScroll = scrollPosition;
+                            const tolerance = 10; // 10px di tolleranza
+                            if (Math.abs(currentScroll - expectedScroll) > tolerance) {
+                                minutesScroll.scrollTop = scrollPosition;
+                            }
+                        }, 50);
+                    } else {
+                        // Fallback: usa querySelector
+                        const selected = minutesContent.querySelector('.selected');
+                        if (selected) {
+                            const scrollPosition = selected.offsetTop - (minutesScroll.offsetHeight / 2) + (selected.offsetHeight / 2);
+                            minutesScroll.scrollTop = scrollPosition;
+                        }
+                    }
+                }, 150);
+            });
+        });
+        
+        // Listener per scroll manuale
+        minutesScrollHandler = () => updateSelectedOnScroll(minutesScroll, 'minutes');
+        minutesScroll.addEventListener('scroll', minutesScrollHandler);
+    }
+    
+    updateTargetPickerSelected();
+}
+
+/**
+ * Aggiorna selezione durante lo scroll
+ */
+function updateSelectedOnScroll(scrollContainer, type) {
+    const items = scrollContainer.querySelectorAll('.target-picker-item');
+    const containerHeight = scrollContainer.clientHeight;
+    const scrollTop = scrollContainer.scrollTop;
+    const centerY = scrollTop + (containerHeight / 2);
+    
+    let closestItem = null;
+    let closestDistance = Infinity;
+    
+    items.forEach(item => {
+        const itemTop = item.offsetTop;
+        const itemHeight = item.clientHeight;
+        const itemCenter = itemTop + (itemHeight / 2);
+        const distance = Math.abs(centerY - itemCenter);
+        
+        if (distance < closestDistance) {
+            closestDistance = distance;
+            closestItem = item;
+        }
+    });
+    
+    if (closestItem) {
+        items.forEach(item => item.classList.remove('selected'));
+        closestItem.classList.add('selected');
+        updateTargetPickerSelected();
+    }
+}
+
+/**
+ * Seleziona ora nel picker
+ */
+function selectTargetHour(hour) {
+    document.querySelectorAll('#target-hours-content .target-picker-item').forEach(item => {
+        item.classList.remove('selected');
+        if (parseInt(item.dataset.value) === hour) {
+            item.classList.add('selected');
+            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+    updateTargetPickerSelected();
+}
+
+/**
+ * Seleziona minuto nel picker
+ */
+function selectTargetMinute(minute) {
+    document.querySelectorAll('#target-minutes-content .target-picker-item').forEach(item => {
+        item.classList.remove('selected');
+        if (parseInt(item.dataset.value) === minute) {
+            item.classList.add('selected');
+            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+    updateTargetPickerSelected();
+}
+
+/**
+ * Aggiorna display "Selezionato"
+ */
+function updateTargetPickerSelected() {
+    const hoursEl = document.querySelector('#target-hours-content .target-picker-item.selected');
+    const minutesEl = document.querySelector('#target-minutes-content .target-picker-item.selected');
+    const selectedEl = document.getElementById('target-picker-selected');
+    
+    if (hoursEl && minutesEl && selectedEl) {
+        const hours = Number(hoursEl.dataset.value) || 0;
+        const minutes = Number(minutesEl.dataset.value) || 0;
+        selectedEl.textContent = `Selezionato: ${hours}h ${minutes.toString().padStart(2, '0')}min`;
+    }
+}
+
+/**
+ * Aggiorna stati dei bottoni del picker target
+ */
+function updateTargetPickerButtonStates() {
+    const hours = parseInt(document.getElementById('target-hours-value').textContent) || 0;
+    const minutes = parseInt(document.getElementById('target-minutes-value').textContent) || 0;
+    
+    // Bottoni ore
+    const hoursDecrease = document.getElementById('target-hours-decrease');
+    const hoursIncrease = document.getElementById('target-hours-increase');
+    if (hoursDecrease) hoursDecrease.disabled = (hours <= 0);
+    if (hoursIncrease) hoursIncrease.disabled = (hours >= 24);
+    
+    // Bottoni minuti
+    const minutesDecrease = document.getElementById('target-minutes-decrease');
+    const minutesIncrease = document.getElementById('target-minutes-increase');
+    
+    if (hours === 24) {
+        if (minutesIncrease) minutesIncrease.disabled = true;
+        if (minutesDecrease) minutesDecrease.disabled = (minutes <= 0);
+    } else if (hours === 0 && minutes === 0) {
+        if (minutesDecrease) minutesDecrease.disabled = true;
+        if (minutesIncrease) minutesIncrease.disabled = false;
+    } else {
+        if (minutesDecrease) minutesDecrease.disabled = false;
+        if (minutesIncrease) minutesIncrease.disabled = false;
+    }
+}
+
+/**
+ * Modifica ore target
+ */
+function adjustTargetHours(delta) {
+    const hoursValue = document.getElementById('target-hours-value');
+    let hours = parseInt(hoursValue.textContent) || 0;
+    
+    hours += delta;
+    
+    // Clamp tra 0 e 24
+    if (hours < 0) hours = 0;
+    if (hours > 24) hours = 24;
+    
+    // Se 24 ore, imposta minuti a 0
+    if (hours === 24) {
+        const minutesValue = document.getElementById('target-minutes-value');
+        if (minutesValue) minutesValue.textContent = '00';
+    }
+    
+    hoursValue.textContent = hours;
+    updateTargetPickerDisplay();
+    updateTargetPickerButtonStates();
+}
+
+/**
+ * Modifica minuti target
+ */
+function adjustTargetMinutes(delta) {
+    const minutesValue = document.getElementById('target-minutes-value');
+    const hoursValue = document.getElementById('target-hours-value');
+    let minutes = parseInt(minutesValue.textContent) || 0;
+    const hours = parseInt(hoursValue.textContent) || 0;
+    
+    minutes += delta;
+    
+    // Gestisci overflow/underflow
+    if (minutes < 0) {
+        if (hours > 0) {
+            const newHours = hours - 1;
+            hoursValue.textContent = newHours;
+            minutes = 60 + minutes;
+        } else {
+            minutes = 0;
+        }
+    } else if (minutes >= 60) {
+        if (hours < 24) {
+            const newHours = hours + 1;
+            hoursValue.textContent = newHours;
+            minutes = minutes - 60;
+        } else {
+            minutes = 0;
+        }
+    }
+    
+    // Se 24 ore, forza minuti a 0
+    if (parseInt(hoursValue.textContent) === 24) {
+        minutes = 0;
+    }
+    
+    minutesValue.textContent = minutes.toString().padStart(2, '0');
+    updateTargetPickerDisplay();
+    updateTargetPickerButtonStates();
+}
+
+/**
+ * Salva impostazioni chiamando l'API
+ */
+async function saveSettings() {
+    const API_BASE_URL = window.location.origin;
+    
+    // Ottieni valori correnti
+    let targetHours = null;
+    let statsWindow = null;
+    
+    // Ottieni riferimenti alle sub-pagine (dichiarati una volta all'inizio)
+    const targetSubpage = document.getElementById('settings-target-subpage');
+    const windowSubpage = document.getElementById('settings-window-subpage');
+    
+    // Se siamo nella sub-pagina target, leggi dai picker scrollabili
+    if (targetSubpage && targetSubpage.classList.contains('active')) {
+        const hoursEl = document.querySelector('#target-hours-content .target-picker-item.selected');
+        const minutesEl = document.querySelector('#target-minutes-content .target-picker-item.selected');
+        if (hoursEl && minutesEl) {
+            // Leggi i valori direttamente da dataset.value (sono numeri)
+            const hours = Number(hoursEl.dataset.value) || 0;
+            const minutes = Number(minutesEl.dataset.value) || 0;
+            
+            targetHours = hoursMinutesToDecimal(hours, minutes);
+            
+            // Validazione
+            if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 24 || minutes < 0 || minutes >= 60) {
+                showSettingsMessage('Errore: valori non validi dal picker', 'error');
+                return;
+            }
+        }
+    } else {
+        // Altrimenti usa il valore corrente dalle settings
+        if (window.sleepData) {
+            targetHours = window.sleepData.target_sleep_hours;
+        }
+    }
+    
+    // Se siamo nella sub-pagina window, leggi da lì
+    if (windowSubpage && windowSubpage.classList.contains('active')) {
+        // Trova il bottone attivo
+        const activeBtn = document.querySelector('.pill-btn.active');
+        if (activeBtn) {
+            statsWindow = parseInt(activeBtn.textContent.replace(' giorni', ''));
+        }
+    } else {
+        // Altrimenti usa il valore corrente
+        statsWindow = window.currentWindow || 7;
+    }
+    
+    // Valida
+    if (targetHours !== null && (targetHours <= 0 || targetHours > 24)) {
+        showSettingsMessage('Le ore sonno target devono essere tra 0h:00m e 24h:00m', 'error');
+        return;
+    }
+    
+    if (statsWindow !== null && ![7, 14, 30].includes(statsWindow)) {
+        showSettingsMessage('La finestra statistiche deve essere 7, 14 o 30 giorni', 'error');
+        return;
+    }
+    
+    // Se non abbiamo valori, usa quelli correnti
+    if (targetHours === null && window.sleepData) {
+        targetHours = window.sleepData.target_sleep_hours;
+    }
+    if (statsWindow === null) {
+        statsWindow = window.currentWindow || 7;
+    }
+    
+    // Mostra loading - trova il bottone nella sub-pagina attiva
+    // (riutilizza windowSubpage e targetSubpage già dichiarati sopra)
+    let saveBtn = null;
+    if (windowSubpage && windowSubpage.classList.contains('active')) {
+        saveBtn = document.getElementById('settings-save-btn-window');
+    } else if (targetSubpage && targetSubpage.classList.contains('active')) {
+        saveBtn = document.getElementById('settings-save-btn-target');
+    }
+    
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = '⏳ Salvataggio...';
+    }
+    
+    // Nascondi messaggi precedenti
+    showSettingsMessage('', '');
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/settings`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                target_sleep_hours: targetHours,
+                stats_window_days: statsWindow,
+                use_dummy_data: false // V2 non ha ancora toggle per questo
+            })
+        });
+        
+        if (!response.ok) {
+            let errorMessage = `HTTP error! status: ${response.status}`;
+            const clonedResponse = response.clone();
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.detail || errorMessage;
+            } catch (e) {
+                try {
+                    const text = await clonedResponse.text();
+                    if (text.includes('Internal Server Error') || text.includes('detail')) {
+                        errorMessage = 'Errore interno del server. Riprova più tardi.';
+                    } else {
+                        errorMessage = text.substring(0, 200) || errorMessage;
+                    }
+                } catch (textError) {
+                    errorMessage = `Errore del server (status ${response.status})`;
+                }
+            }
+            throw new Error(errorMessage);
+        }
+        
+        const result = await response.json();
+        
+        // Mostra messaggio di successo
+        showSettingsMessage('✅ Impostazioni salvate con successo!', 'success');
+        
+        // Aggiorna valori nella lista impostazioni
+        const windowValueEl = document.getElementById('settings-window-value');
+        if (windowValueEl) {
+            windowValueEl.textContent = `${statsWindow} giorni`;
+        }
+        
+        const targetValueEl = document.getElementById('settings-target-value');
+        if (targetValueEl) {
+            const { hours, minutes } = decimalToHoursMinutes(targetHours);
+            if (minutes === 0) {
+                targetValueEl.textContent = `${hours}h`;
+            } else {
+                targetValueEl.textContent = `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+            }
+        }
+        
+        // Aggiorna window globale
+        window.currentWindow = statsWindow;
+        
+        // Aggiorna bottone per mostrare ricaricamento
+        if (saveBtn) {
+            saveBtn.textContent = '⏳ Ricaricamento...';
+        }
+        
+        // Mostra messaggio di ricaricamento
+        showSettingsMessage('✅ Impostazioni salvate! ⏳ Ricaricamento dati...', 'success');
+        
+        // Ricarica settings e sleep status usando funzioni globali
+        if (typeof loadSettings === 'function') {
+            await loadSettings();
+        }
+        if (typeof loadSleepStatus === 'function') {
+            await loadSleepStatus();
+        }
+        
+        // Mostra messaggio finale
+        showSettingsMessage('✅ Impostazioni salvate e dati aggiornati!', 'success');
+        
+        // NON aggiornare il picker target se la sub-pagina è ancora aperta
+        // (per evitare che il valore venga sovrascritto durante il ricaricamento)
+        const targetSubpage = document.getElementById('settings-target-subpage');
+        if (targetSubpage && targetSubpage.classList.contains('active')) {
+            // Mantieni il valore che l'utente ha selezionato nel picker
+            // Non aggiornare con updateSettingsUI per evitare che venga modificato
+        }
+        
+        // Chiudi sub-pagina dopo un breve delay
+        setTimeout(() => {
+            // Nascondi messaggio prima di chiudere
+            const windowMessage = document.getElementById('settings-message-window');
+            const targetMessage = document.getElementById('settings-message-target');
+            if (windowMessage) windowMessage.classList.remove('active');
+            if (targetMessage) targetMessage.classList.remove('active');
+            
+            // Reset bottone salva prima di chiudere
+            const saveBtnWindow = document.getElementById('settings-save-btn-window');
+            const saveBtnTarget = document.getElementById('settings-save-btn-target');
+            if (saveBtnWindow) {
+                saveBtnWindow.disabled = false;
+                saveBtnWindow.textContent = 'Salva';
+            }
+            if (saveBtnTarget) {
+                saveBtnTarget.disabled = false;
+                saveBtnTarget.textContent = 'Salva';
+            }
+            
+            closeSettingsSubpage();
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Error saving settings:', error);
+        showSettingsMessage('❌ Errore nel salvataggio: ' + error.message, 'error');
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Salva';
+        }
+    } finally {
+        // Assicurati che il bottone sia sempre resettato in caso di errore
+        if (saveBtn && saveBtn.disabled) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Salva';
+        }
+    }
+}
+
+/**
+ * Mostra messaggio nelle impostazioni
+ */
+function showSettingsMessage(message, type) {
+    // Trova il messaggio nella sub-pagina attiva usando ID univoci
+    const windowSubpage = document.getElementById('settings-window-subpage');
+    const targetSubpage = document.getElementById('settings-target-subpage');
+    
+    let messageEl = null;
+    if (windowSubpage && windowSubpage.classList.contains('active')) {
+        messageEl = document.getElementById('settings-message-window');
+    } else if (targetSubpage && targetSubpage.classList.contains('active')) {
+        messageEl = document.getElementById('settings-message-target');
+    }
+    
+    // Se non trovato nella sub-pagina attiva, prova a cercare in entrambe (per cleanup)
+    if (!messageEl) {
+        messageEl = document.getElementById('settings-message-window') || document.getElementById('settings-message-target');
+    }
+    
+    if (messageEl) {
+        if (message) {
+            messageEl.textContent = message;
+            messageEl.className = `settings-message ${type} active`;
+            // Scrolla il messaggio in vista se necessario
+            messageEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            // Se message è vuoto, nascondi
+            messageEl.classList.remove('active');
+        }
+    }
+    // Rimuovi il console.warn - non è un errore critico se l'elemento non esiste
 }
 
 /**
  * Mostra sotto-pagina impostazioni
  */
 function showSettingsSubpage(type) {
+    // Nascondi messaggi precedenti
+    const windowMessage = document.getElementById('settings-message-window');
+    const targetMessage = document.getElementById('settings-message-target');
+    if (windowMessage) windowMessage.classList.remove('active');
+    if (targetMessage) targetMessage.classList.remove('active');
+    
     if (type === 'window') {
         document.getElementById('settings-window-subpage').classList.add('active');
+        // Inizializza selettore con valore corrente
+        const currentWindow = window.currentWindow || 7;
+        document.querySelectorAll('.pill-btn').forEach(btn => {
+            btn.classList.remove('active');
+            const btnDays = parseInt(btn.textContent.replace(' giorni', ''));
+            if (btnDays === currentWindow) {
+                btn.classList.add('active');
+            }
+        });
     } else if (type === 'target') {
-        document.getElementById('settings-target-subpage').classList.add('active');
+        const targetSubpage = document.getElementById('settings-target-subpage');
+        targetSubpage.classList.add('active');
+        
+        // Reset bottone salva quando si apre la sub-pagina
+        const saveBtnTarget = document.getElementById('settings-save-btn-target');
+        if (saveBtnTarget) {
+            saveBtnTarget.disabled = false;
+            saveBtnTarget.textContent = 'Salva';
+        }
+        
+        // Inizializza picker scrollabile con valore corrente
+        // Usa requestAnimationFrame per assicurarsi che la sub-pagina sia completamente visibile
+        // prima di inizializzare il picker
+        requestAnimationFrame(() => {
+            requestAnimationFrame(async () => {
+                if (typeof initTargetPicker === 'function') {
+                    try {
+                        await initTargetPicker();
+                    } catch (error) {
+                        console.error('Error initializing target picker:', error);
+                    }
+                }
+            });
+        });
     }
 }
 
@@ -52,12 +729,50 @@ function closeSettingsSubpage() {
     document.querySelectorAll('.settings-subpage').forEach(page => {
         page.classList.remove('active');
     });
+    
+    // Reset bottoni salva quando si chiude la sub-pagina
+    const saveBtnWindow = document.getElementById('settings-save-btn-window');
+    const saveBtnTarget = document.getElementById('settings-save-btn-target');
+    if (saveBtnWindow) {
+        saveBtnWindow.disabled = false;
+        saveBtnWindow.textContent = 'Salva';
+    }
+    if (saveBtnTarget) {
+        saveBtnTarget.disabled = false;
+        saveBtnTarget.textContent = 'Salva';
+    }
 }
 
 // Esponi funzioni globalmente
+window.updateSettingsUI = updateSettingsUI;
 window.selectWindow = selectWindow;
 window.toggleWeight = toggleWeight;
 window.saveSettings = saveSettings;
 window.showSettingsSubpage = showSettingsSubpage;
 window.closeSettingsSubpage = closeSettingsSubpage;
+window.adjustTargetHours = adjustTargetHours;
+window.adjustTargetMinutes = adjustTargetMinutes;
+window.decimalToHoursMinutes = decimalToHoursMinutes;
+window.hoursMinutesToDecimal = hoursMinutesToDecimal;
+/**
+ * Apri pagina target settings dalla homepage
+ */
+function openTargetSettings() {
+    // Mostra pagina impostazioni
+    if (typeof showSettings === 'function') {
+        showSettings();
+    }
+    // Apri sub-pagina target
+    setTimeout(() => {
+        if (typeof showSettingsSubpage === 'function') {
+            showSettingsSubpage('target');
+        }
+    }, 100);
+}
+
+window.initTargetPicker = initTargetPicker;
+window.selectTargetHour = selectTargetHour;
+window.selectTargetMinute = selectTargetMinute;
+window.updateTargetPickerSelected = updateTargetPickerSelected;
+window.openTargetSettings = openTargetSettings;
 

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -24,6 +24,36 @@
                     </div>
                     <div class="header-right">
                         <div class="header-date" id="header-date"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Avviso Nessun Dato -->
+            <div class="card no-data-warning" id="no-data-warning" style="display: none;">
+                <div class="no-data-warning-content">
+                    <span class="no-data-warning-icon">⚠️</span>
+                    <span class="no-data-warning-text">Non ci sono dati. Avvia la sincronizzazione con il pulsante qui sotto</span>
+                </div>
+            </div>
+
+            <!-- Avviso Dato Oggi Mancante -->
+            <div class="card missing-today-warning" id="missing-today-warning" style="display: none;">
+                <div class="missing-today-warning-content">
+                    <span class="missing-today-warning-icon">⚠️</span>
+                    <div class="missing-today-warning-text">
+                        <strong>Dati sonno mancanti</strong>
+                        <p id="missing-today-message"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Avviso Dati Insufficienti per Finestra -->
+            <div class="card insufficient-data-warning" id="insufficient-data-warning" style="display: none;">
+                <div class="insufficient-data-warning-content">
+                    <span class="insufficient-data-warning-icon">⚠️</span>
+                    <div class="insufficient-data-warning-text">
+                        <strong>Dati insufficienti</strong>
+                        <p id="insufficient-data-message"></p>
                     </div>
                 </div>
             </div>
@@ -79,12 +109,12 @@
                     </div>
                     <div class="info-card-chevron">›</div>
                 </div>
-                <div class="info-card">
+                <div class="info-card" onclick="openTargetSettings()">
                     <div class="info-card-content">
                         <div class="info-card-label">Target sonno giornaliero</div>
                         <div class="info-card-value" id="target-sleep">-</div>
                     </div>
-                    <div class="info-card-chevron">›</div>
+                    <span class="info-card-chevron">›</span>
                 </div>
             </div>
         </div>
@@ -135,6 +165,10 @@
             <button class="pill-btn" onclick="selectWindow(14)">14 giorni</button>
             <button class="pill-btn" onclick="selectWindow(30)">30 giorni</button>
         </div>
+        <div class="settings-subpage-actions">
+            <button class="settings-save-btn" id="settings-save-btn-window" onclick="saveSettings()">Salva</button>
+        </div>
+        <div class="settings-message" id="settings-message-window"></div>
     </div>
 
     <!-- Sotto-pagina Obiettivo -->
@@ -143,9 +177,28 @@
             <button class="settings-subpage-back" onclick="closeSettingsSubpage()">‹</button>
             <h2 class="settings-subpage-title">Target sonno giornaliero</h2>
         </div>
-        <div class="target-picker">
-            <div class="target-picker-value" id="target-picker-value">8h 00m</div>
+            <div class="target-picker-container">
+            <div class="target-picker-label-top">IMPOSTA OBIETTIVO SONNO:</div>
+            <div class="target-picker-main">
+                <div class="target-picker-scrollable">
+                    <div class="target-picker-scroll-wrapper" id="target-hours-scroll">
+                        <div class="target-picker-scroll-content" id="target-hours-content"></div>
+                    </div>
+                    <div class="target-picker-scroll-wrapper" id="target-minutes-scroll">
+                        <div class="target-picker-scroll-content" id="target-minutes-content"></div>
+                    </div>
+                </div>
+                <div class="target-picker-separator"></div>
+                <div class="target-picker-selected" id="target-picker-selected">Selezionato: 8h 00min</div>
+            </div>
+            <div class="target-picker-info">
+                Secondo gli studi scientifici, la durata ottimale del riposo per gli adulti si colloca tra le 7 e le 9 ore. Un obiettivo di 8 ore costituisce una scelta ideale se non conosci ancora le tue esigenze personali.
+            </div>
         </div>
+        <div class="settings-subpage-actions">
+            <button class="settings-save-btn" id="settings-save-btn-target" onclick="saveSettings()">Salva</button>
+        </div>
+        <div class="settings-message" id="settings-message-target"></div>
     </div>
 
     <!-- Pagina Zone Debito -->
