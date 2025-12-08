@@ -12,6 +12,12 @@ function initChart(data) {
     const ctx = document.getElementById('main-chart');
     if (!ctx) return;
     
+    // Distruggi grafico esistente se presente
+    if (mainChart) {
+        mainChart.destroy();
+        mainChart = null;
+    }
+    
     const chartData = prepareChartData(data);
     
     mainChart = new Chart(ctx, {

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -6,663 +6,11 @@
     <title>Sleep Debt Tracker</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛏️</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <style>
-        /* Design System - Variabili CSS */
-        :root {
-            /* Colori - Palette v1 più leggera */
-            --color-primary: #667eea;
-            --color-primary-dark: #764ba2;
-            --color-green: #5AC85A;
-            --color-yellow: #F6C400;
-            --color-orange: #EB8C00;
-            --color-red: #DC3545;
-            --color-gray-light: #F5F5F5;
-            --color-gray-medium: #E0E0E0;
-            --color-gray-dark: #9E9E9E;
-            --color-text-primary: #333333;
-            --color-text-secondary: #666666;
-            --color-background: #FFFFFF;
-            --color-background-gradient: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            
-            /* Spacing - Ridotto */
-            --spacing-xs: 0.25rem;
-            --spacing-sm: 0.5rem;
-            --spacing-md: 0.75rem;
-            --spacing-lg: 1rem;
-            --spacing-xl: 1.5rem;
-            
-            /* Typography - Ridotto */
-            --font-size-xs: 0.7rem;
-            --font-size-sm: 0.8rem;
-            --font-size-base: 0.9rem;
-            --font-size-lg: 1rem;
-            --font-size-xl: 1.2rem;
-            --font-size-2xl: 1.5rem;
-            --font-size-3xl: 2rem;
-            --font-size-4xl: 2.5rem;
-            
-            /* Border Radius */
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --radius-xl: 20px;
-            --radius-full: 9999px;
-            
-            /* Shadows */
-            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--color-background);
-            color: var(--color-text-primary);
-            line-height: 1.5;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            padding-bottom: 120px; /* Spazio per navbar e toggle */
-            min-height: 100vh;
-        }
-
-        /* Container principale */
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-            padding: var(--spacing-sm) var(--spacing-md);
-        }
-
-        /* Header */
-        .header {
-            padding: var(--spacing-md) var(--spacing-md) var(--spacing-md);
-            background: transparent;
-        }
-
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: var(--spacing-sm);
-        }
-
-        .header-left {
-            flex: 1;
-        }
-
-        .header-right {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: var(--spacing-xs);
-            justify-content: flex-start;
-        }
-
-        .header-date {
-            font-size: var(--font-size-sm);
-            font-weight: 500;
-            color: var(--color-text-secondary);
-            line-height: 1.2;
-        }
-
-        .header-title {
-            font-size: var(--font-size-2xl);
-            font-weight: 700;
-            color: var(--color-text-primary);
-            margin-bottom: var(--spacing-xs);
-            margin-top: 0;
-            line-height: 1.2;
-        }
-
-        .header-subtitle {
-            font-size: var(--font-size-base);
-            color: var(--color-text-secondary);
-            margin-bottom: var(--spacing-sm);
-        }
-
-
-        .sync-btn {
-            padding: var(--spacing-xs) var(--spacing-sm);
-            border: none;
-            background: var(--color-gray-light);
-            border-radius: var(--radius-full);
-            font-size: var(--font-size-sm);
-            color: var(--color-text-primary);
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s;
-            white-space: nowrap;
-            line-height: 1.2;
-        }
-
-        .sync-btn:active {
-            background: var(--color-gray-medium);
-            transform: scale(0.98);
-        }
-
-        .sync-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .header-link {
-            font-size: var(--font-size-sm);
-            color: var(--color-text-secondary);
-            text-decoration: none;
-            padding: var(--spacing-xs) var(--spacing-sm);
-            border-radius: var(--radius-md);
-            transition: background 0.2s;
-        }
-
-        .header-link:active {
-            background: var(--color-gray-light);
-        }
-
-        /* Card */
-        .card {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
-            border-radius: var(--radius-md);
-            padding: var(--spacing-md);
-            margin-bottom: var(--spacing-md);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            border: none;
-        }
-
-        /* Card Debito Principale */
-        .debt-main-card {
-            padding: var(--spacing-md);
-            margin-bottom: var(--spacing-md);
-            text-align: center;
-        }
-
-        .debt-label {
-            font-size: var(--font-size-lg);
-            color: var(--color-text-secondary);
-            margin-bottom: var(--spacing-xs);
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: var(--spacing-xs);
-        }
-
-        .debt-label-icon {
-            font-size: var(--font-size-xl);
-            opacity: 0.7;
-        }
-
-        .debt-value {
-            font-size: var(--font-size-3xl);
-            font-weight: 700;
-            line-height: 1.2;
-        }
-
-        .debt-value.optimal { color: var(--color-green); }
-        .debt-value.slight { color: var(--color-yellow); }
-        .debt-value.large { color: var(--color-orange); }
-        .debt-value.critical { color: var(--color-red); }
-
-        /* Mini Card */
-        .mini-cards {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--spacing-sm);
-            margin-bottom: var(--spacing-md);
-        }
-
-        .mini-card {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
-            border-radius: var(--radius-md);
-            padding: var(--spacing-sm) var(--spacing-md);
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-            border: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
-
-        .mini-card-content {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .mini-card-label {
-            font-size: var(--font-size-xs);
-            color: var(--color-text-secondary);
-            margin-bottom: var(--spacing-xs);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .mini-card-value {
-            font-size: var(--font-size-lg);
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .mini-card-chevron {
-            font-size: var(--font-size-lg);
-            color: var(--color-text-secondary);
-            opacity: 0.5;
-        }
-
-        /* Grafico */
-        .chart-section {
-            margin-bottom: var(--spacing-md);
-        }
-
-        .chart-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: var(--spacing-sm);
-            cursor: pointer;
-        }
-
-        .chart-title {
-            font-size: var(--font-size-sm);
-            font-weight: 600;
-            color: var(--color-text-primary);
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-xs);
-        }
-
-        .chart-title-chevron {
-            font-size: var(--font-size-sm);
-            color: var(--color-text-secondary);
-            opacity: 0.5;
-        }
-
-        .chart-toggle-icon {
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
-            opacity: 0.6;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 200px;
-            width: 100%;
-            margin-bottom: var(--spacing-sm);
-        }
-
-        .chart-container canvas {
-            max-width: 100%;
-            height: 200px !important;
-        }
-
-        .chart-controls {
-            display: none;
-        }
-
-        /* Card Dormi Oggi e Obiettivo */
-        .info-cards {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--spacing-sm);
-            margin-bottom: var(--spacing-md);
-        }
-
-        .info-card {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
-            border-radius: var(--radius-md);
-            padding: var(--spacing-sm) var(--spacing-md);
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-            border: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
-
-        .info-card-content {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .info-card-label {
-            font-size: var(--font-size-xs);
-            color: var(--color-text-secondary);
-            margin-bottom: var(--spacing-xs);
-            white-space: nowrap;
-        }
-
-        .info-card-value {
-            font-size: var(--font-size-xl);
-            font-weight: 700;
-            color: var(--color-text-primary);
-            white-space: nowrap;
-        }
-
-        .info-card-chevron {
-            font-size: var(--font-size-lg);
-            color: var(--color-text-secondary);
-            opacity: 0.5;
-        }
-
-        /* UI Precedente Toggle */
-        .ui-toggle-container {
-            position: fixed;
-            bottom: 70px;
-            left: 0;
-            right: 0;
-            padding: var(--spacing-sm) var(--spacing-md);
-            background: var(--color-background);
-            z-index: 999;
-            display: flex;
-            justify-content: center;
-        }
-
-        .ui-toggle {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-sm);
-            padding: var(--spacing-xs) var(--spacing-md);
-            background: var(--color-gray-light);
-            border-radius: var(--radius-full);
-            text-decoration: none;
-            color: var(--color-text-primary);
-            font-size: var(--font-size-sm);
-            transition: all 0.2s;
-            border: none;
-            cursor: pointer;
-        }
-
-        .ui-toggle:active {
-            background: var(--color-gray-medium);
-        }
-
-        .ui-toggle-switch {
-            position: relative;
-            width: 51px;
-            height: 31px;
-            background: var(--color-gray-medium);
-            border-radius: var(--radius-full);
-            transition: background 0.3s;
-            flex-shrink: 0;
-            display: block;
-        }
-
-        .ui-toggle-switch::after {
-            content: '';
-            position: absolute;
-            width: 27px;
-            height: 27px;
-            border-radius: 50%;
-            background: white;
-            top: 2px;
-            left: 2px;
-            transition: transform 0.3s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Navbar Inferiore */
-        .navbar-bottom {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--color-background);
-            border-top: 1px solid var(--color-gray-light);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: var(--spacing-sm) 0;
-            z-index: 1000;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-        }
-
-        .navbar-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            padding: var(--spacing-xs);
-            text-decoration: none;
-            color: var(--color-text-secondary);
-            font-size: var(--font-size-xs);
-            transition: color 0.2s;
-            border: none;
-            background: none;
-            cursor: pointer;
-        }
-
-        .navbar-item.active {
-            color: var(--color-green);
-        }
-
-        .navbar-icon {
-            font-size: var(--font-size-xl);
-        }
-
-        /* Pagina Impostazioni */
-        .settings-page {
-            display: none;
-        }
-
-        .settings-page.active {
-            display: block;
-        }
-
-        .settings-section {
-            margin-bottom: var(--spacing-xl);
-        }
-
-        .settings-section-title {
-            font-size: var(--font-size-lg);
-            font-weight: 600;
-            margin-bottom: var(--spacing-md);
-            color: var(--color-text-primary);
-        }
-
-        /* Selettore Pill Style */
-        .pill-selector {
-            display: flex;
-            gap: var(--spacing-sm);
-            flex-wrap: wrap;
-        }
-
-        .pill-btn {
-            padding: var(--spacing-sm) var(--spacing-lg);
-            border: 1px solid var(--color-gray-medium);
-            background: var(--color-background);
-            border-radius: var(--radius-full);
-            font-size: var(--font-size-base);
-            color: var(--color-text-primary);
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
-        }
-
-        .pill-btn.active {
-            background: var(--color-green);
-            color: var(--color-background);
-            border-color: var(--color-green);
-        }
-
-        /* Toggle Switch iOS */
-        .toggle-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: var(--spacing-md) 0;
-        }
-
-        .toggle-label {
-            font-size: var(--font-size-base);
-            color: var(--color-text-primary);
-        }
-
-        .toggle-switch {
-            position: relative;
-            width: 51px;
-            height: 31px;
-            background: var(--color-gray-medium);
-            border-radius: var(--radius-full);
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .toggle-switch.active {
-            background: var(--color-green);
-        }
-
-        .toggle-switch::after {
-            content: '';
-            position: absolute;
-            width: 27px;
-            height: 27px;
-            border-radius: 50%;
-            background: white;
-            top: 2px;
-            left: 2px;
-            transition: transform 0.3s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .toggle-switch.active::after {
-            transform: translateX(20px);
-        }
-
-        /* Picker Target Sonno */
-        .target-picker {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 200px;
-            background: var(--color-gray-light);
-            border-radius: var(--radius-md);
-            margin: var(--spacing-md) 0;
-        }
-
-        .target-picker-value {
-            font-size: var(--font-size-4xl);
-            font-weight: 700;
-            color: var(--color-text-primary);
-        }
-
-        /* Pulsante Salva */
-        .save-btn {
-            width: 100%;
-            padding: var(--spacing-md);
-            background: var(--color-green);
-            color: var(--color-background);
-            border: none;
-            border-radius: var(--radius-md);
-            font-size: var(--font-size-lg);
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin-top: var(--spacing-lg);
-        }
-
-        .save-btn:active {
-            background: #4AB04A;
-        }
-
-        /* Pagina Grafico Fullscreen */
-        .chart-fullscreen {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: var(--color-background);
-            z-index: 2000;
-            padding: var(--spacing-lg);
-            overflow-y: auto;
-        }
-
-        .chart-fullscreen.active {
-            display: block;
-        }
-
-        .chart-fullscreen-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: var(--spacing-lg);
-        }
-
-        .chart-fullscreen-title {
-            font-size: var(--font-size-2xl);
-            font-weight: 700;
-        }
-
-        .chart-fullscreen-close {
-            padding: var(--spacing-sm);
-            border: none;
-            background: var(--color-gray-light);
-            border-radius: var(--radius-md);
-            font-size: var(--font-size-lg);
-            cursor: pointer;
-        }
-
-        .chart-fullscreen-selector {
-            display: flex;
-            gap: var(--spacing-sm);
-            margin-bottom: var(--spacing-lg);
-            overflow-x: auto;
-            padding-bottom: var(--spacing-xs);
-        }
-
-        .chart-fullscreen-selector-btn {
-            padding: var(--spacing-sm) var(--spacing-lg);
-            border: 1px solid var(--color-gray-medium);
-            background: var(--color-background);
-            border-radius: var(--radius-full);
-            font-size: var(--font-size-base);
-            color: var(--color-text-primary);
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.2s;
-        }
-
-        .chart-fullscreen-selector-btn.active {
-            background: var(--color-green);
-            color: var(--color-background);
-            border-color: var(--color-green);
-        }
-
-        .chart-fullscreen-container {
-            height: 400px;
-            margin-bottom: var(--spacing-lg);
-        }
-
-        .chart-fullscreen-bar {
-            height: 8px;
-            background: linear-gradient(to right, var(--color-green), var(--color-yellow), var(--color-orange), var(--color-red));
-            border-radius: var(--radius-full);
-            margin-top: var(--spacing-lg);
-        }
-
-        /* Homepage */
-        .homepage {
-            display: block;
-        }
-
-        .homepage.hidden {
-            display: none;
-        }
-
-        /* Responsive */
-        @media (min-width: 768px) {
-            .container {
-                max-width: 600px;
-                margin: 0 auto;
-            }
-        }
-    </style>
+    <!-- CSS Modulare -->
+    <link rel="stylesheet" href="/static/v2/styles/variables.css">
+    <link rel="stylesheet" href="/static/v2/styles/base.css">
+    <link rel="stylesheet" href="/static/v2/styles/components.css">
+    <link rel="stylesheet" href="/static/v2/styles/pages.css">
 </head>
 <body>
     <!-- Homepage -->
@@ -692,7 +40,7 @@
 
             <!-- Mini Card Zona e Cambiamento -->
             <div class="mini-cards">
-                <div class="mini-card">
+                <div class="mini-card" onclick="showZonePage()">
                     <div class="mini-card-content">
                         <div class="mini-card-label">Zona attuale</div>
                         <div class="mini-card-value" id="current-zone">-</div>
@@ -747,57 +95,179 @@
         <div class="container">
             <div class="header">
                 <h1 class="header-title">Impostazioni</h1>
-                <a href="/ui/v1" class="header-link">UI Precedente</a>
             </div>
 
-            <div class="settings-section">
-                <h2 class="settings-section-title">Finestra mobile del debito</h2>
-                <div class="pill-selector">
-                    <button class="pill-btn active" onclick="selectWindow(7)">7 giorni</button>
-                    <button class="pill-btn" onclick="selectWindow(14)">14 giorni</button>
-                    <button class="pill-btn" onclick="selectWindow(30)">30 giorni</button>
+            <div class="settings-list">
+                <div class="settings-row" onclick="showSettingsSubpage('window')">
+                    <span class="settings-row-label">Finestra mobile del debito</span>
+                    <div class="settings-row-value">
+                        <span id="settings-window-value">7 giorni</span>
+                        <span class="settings-row-chevron">›</span>
+                    </div>
+                </div>
+                <div class="settings-row" onclick="showSettingsSubpage('target')">
+                    <span class="settings-row-label">Obiettivo del sonno</span>
+                    <div class="settings-row-value">
+                        <span id="settings-target-value">8h 00m</span>
+                        <span class="settings-row-chevron">›</span>
+                    </div>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <div class="settings-section">
-                <div class="toggle-container">
-                    <span class="toggle-label">Valuta di più gli ultimi giorni</span>
-                    <div class="toggle-switch" id="weight-toggle" onclick="toggleWeight()"></div>
+    <!-- Sotto-pagina Finestra -->
+    <div id="settings-window-subpage" class="settings-subpage">
+        <div class="settings-subpage-header">
+            <button class="settings-subpage-back" onclick="closeSettingsSubpage()">←</button>
+            <h2 class="settings-subpage-title">Finestra mobile del debito</h2>
+        </div>
+        <div class="pill-selector">
+            <button class="pill-btn active" onclick="selectWindow(7)">7 giorni</button>
+            <button class="pill-btn" onclick="selectWindow(14)">14 giorni</button>
+            <button class="pill-btn" onclick="selectWindow(30)">30 giorni</button>
+        </div>
+    </div>
+
+    <!-- Sotto-pagina Obiettivo -->
+    <div id="settings-target-subpage" class="settings-subpage">
+        <div class="settings-subpage-header">
+            <button class="settings-subpage-back" onclick="closeSettingsSubpage()">←</button>
+            <h2 class="settings-subpage-title">Obiettivo del sonno</h2>
+        </div>
+        <div class="target-picker">
+            <div class="target-picker-value" id="target-picker-value">8h 00m</div>
+        </div>
+    </div>
+
+    <!-- Pagina Zone Debito -->
+    <div id="zone-page" class="zone-page">
+        <div class="zone-page-header">
+            <button class="zone-page-back" onclick="closeZonePage()">←</button>
+            <h2 class="zone-page-title">Zone del debito</h2>
+        </div>
+
+        <div class="zone-main-card">
+            <div class="zone-main-label">Debito di sonno attuale</div>
+            <div class="zone-main-value" id="zone-main-value">-</div>
+            <div class="zone-progress-bar" id="zone-progress-bar">
+                <div class="zone-progress-slider" id="zone-progress-slider"></div>
+            </div>
+            <div class="zone-progress-markers">
+                <div class="zone-progress-marker" style="left: 0%;">
+                    <div class="zone-progress-marker-dot" style="background: var(--color-yellow);"></div>
+                    <div class="zone-progress-marker-label">6 h</div>
+                </div>
+                <div class="zone-progress-marker" style="left: 50%;">
+                    <div class="zone-progress-marker-dot" style="background: var(--color-orange);"></div>
+                    <div class="zone-progress-marker-label">13 h e 30 min</div>
+                </div>
+                <div class="zone-progress-marker" style="left: 100%;">
+                    <div class="zone-progress-marker-dot" style="background: var(--color-red);"></div>
+                    <div class="zone-progress-marker-label">24 h e 23 min</div>
                 </div>
             </div>
+        </div>
 
-            <div class="settings-section">
-                <h2 class="settings-section-title">Obiettivo del sonno</h2>
-                <div class="target-picker">
-                    <div class="target-picker-value" id="target-picker-value">8h 00m</div>
+        <div class="zone-list">
+            <div class="zone-item expanded" onclick="toggleZoneItem(this)">
+                <div class="zone-item-header">
+                    <div class="zone-item-left">
+                        <div class="zone-item-icon optimal">✓</div>
+                        <div>
+                            <div class="zone-item-title">Ottimale</div>
+                            <div class="zone-item-range">(&lt; 6 h)</div>
+                        </div>
+                    </div>
+                    <span class="zone-item-chevron">›</span>
+                </div>
+                <div class="zone-item-content">
+                    Sei a un livello ottimale. Energia e concentrazione sono probabilmente al massimo.
                 </div>
             </div>
-
-            <button class="save-btn" onclick="saveSettings()">Salva modifiche</button>
+            <div class="zone-item" onclick="toggleZoneItem(this)">
+                <div class="zone-item-header">
+                    <div class="zone-item-left">
+                        <div class="zone-item-icon slight">!</div>
+                        <div>
+                            <div class="zone-item-title">Lieve mancanza</div>
+                            <div class="zone-item-range">(6 h - 13 h e 30 min)</div>
+                        </div>
+                    </div>
+                    <span class="zone-item-chevron">›</span>
+                </div>
+                <div class="zone-item-content">
+                    Hai una lieve mancanza di sonno. Considera di riposare un po' di più.
+                </div>
+            </div>
+            <div class="zone-item" onclick="toggleZoneItem(this)">
+                <div class="zone-item-header">
+                    <div class="zone-item-left">
+                        <div class="zone-item-icon large">⚠</div>
+                        <div>
+                            <div class="zone-item-title">Grande mancanza</div>
+                            <div class="zone-item-range">(13 h e 30 min - 24 h e 23 min)</div>
+                        </div>
+                    </div>
+                    <span class="zone-item-chevron">›</span>
+                </div>
+                <div class="zone-item-content">
+                    Hai una grande mancanza di sonno. È importante recuperare il riposo.
+                </div>
+            </div>
+            <div class="zone-item" onclick="toggleZoneItem(this)">
+                <div class="zone-item-header">
+                    <div class="zone-item-left">
+                        <div class="zone-item-icon critical">!</div>
+                        <div>
+                            <div class="zone-item-title">Bisogno di riposo</div>
+                            <div class="zone-item-range">(24 h e 23 min+)</div>
+                        </div>
+                    </div>
+                    <span class="zone-item-chevron">›</span>
+                </div>
+                <div class="zone-item-content">
+                    Hai un bisogno urgente di riposo. Cerca di dormire di più e recuperare il debito.
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Pagina Grafico Fullscreen -->
     <div id="chart-fullscreen" class="chart-fullscreen">
-        <div class="container">
-            <div class="chart-fullscreen-header">
-                <h2 class="chart-fullscreen-title">Trend del debito</h2>
-                <button class="chart-fullscreen-close" onclick="closeChartFullscreen()">✕</button>
-            </div>
+        <div class="chart-fullscreen-header">
+            <button class="chart-fullscreen-back" onclick="closeChartFullscreen()">←</button>
+            <h2 class="chart-fullscreen-title">Tendenza al debito di sonno</h2>
+        </div>
 
-            <div class="chart-fullscreen-selector">
-                <button class="chart-fullscreen-selector-btn active" onclick="selectDays(7)">7 giorni</button>
-                <button class="chart-fullscreen-selector-btn" onclick="selectDays(10)">10 giorni</button>
-                <button class="chart-fullscreen-selector-btn" onclick="selectDays(14)">14 giorni</button>
-                <button class="chart-fullscreen-selector-btn" onclick="selectDays(30)">30 giorni</button>
-                <button class="chart-fullscreen-selector-btn" onclick="selectDays(90)">90 giorni</button>
-            </div>
+        <div class="chart-fullscreen-container">
+            <canvas id="fullscreen-chart"></canvas>
+        </div>
 
-            <div class="chart-fullscreen-container">
-                <canvas id="fullscreen-chart"></canvas>
+        <div class="chart-fullscreen-bar-container">
+            <div class="chart-fullscreen-bar" id="chart-fullscreen-bar">
+                <div class="chart-fullscreen-bar-marker" style="left: 0%;">
+                    <div class="chart-fullscreen-bar-marker-dot"></div>
+                    <div class="chart-fullscreen-bar-marker-label">6 h</div>
+                </div>
+                <div class="chart-fullscreen-bar-marker" style="left: 50%;">
+                    <div class="chart-fullscreen-bar-marker-dot"></div>
+                    <div class="chart-fullscreen-bar-marker-label">13 h e 30 min</div>
+                </div>
+                <div class="chart-fullscreen-bar-marker" style="left: 100%;">
+                    <div class="chart-fullscreen-bar-marker-dot"></div>
+                    <div class="chart-fullscreen-bar-marker-label">24 h e 23 min</div>
+                </div>
             </div>
+        </div>
 
-            <div class="chart-fullscreen-bar"></div>
+        <div class="chart-fullscreen-selector">
+            <button class="chart-fullscreen-selector-btn" onclick="selectDays(7)">7 Giorni</button>
+            <button class="chart-fullscreen-selector-btn active" onclick="selectDays(10)">10 Giorni</button>
+            <button class="chart-fullscreen-selector-btn" onclick="selectDays(14)">14 Giorni</button>
+            <button class="chart-fullscreen-selector-btn" onclick="selectDays(30)">30 Giorni</button>
+            <button class="chart-fullscreen-selector-btn" onclick="selectDays(90)">90 Giorni</button>
+            <span class="chart-fullscreen-selector-icon" onclick="event.stopPropagation(); switchChartType()">📊</span>
         </div>
     </div>
 
@@ -821,21 +291,13 @@
         </button>
     </nav>
 
+    <!-- JavaScript Modulare -->
     <script src="/static/v2/app.js"></script>
+    <script src="/static/v2/js/navigation.js"></script>
+    <script src="/static/v2/js/pages/homepage.js"></script>
+    <script src="/static/v2/js/pages/settings.js"></script>
+    <script src="/static/v2/js/pages/zone.js"></script>
+    <script src="/static/v2/js/pages/chart.js"></script>
     <script src="/static/v2/charts.js"></script>
-    <script>
-        // Make functions available globally for onclick handlers
-        window.openChartFullscreen = openChartFullscreen;
-        window.closeChartFullscreen = closeChartFullscreen;
-        window.switchChartType = switchChartType;
-        window.selectWindow = selectWindow;
-        window.toggleWeight = toggleWeight;
-        window.saveSettings = saveSettings;
-        window.showHomepage = showHomepage;
-        window.showSettings = showSettings;
-        window.selectDays = selectDays;
-        window.switchChartType = switchChartType;
-    </script>
 </body>
 </html>
-
