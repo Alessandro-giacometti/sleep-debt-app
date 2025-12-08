@@ -434,6 +434,126 @@
             background: #e0e0e0;
         }
 
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-top: 20px;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-danger:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .danger-zone {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .danger-zone h4 {
+            color: #dc3545;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .danger-zone p {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        /* Modal overlay for confirmation */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-content h3 {
+            color: #dc3545;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .modal-content p {
+            color: #333;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-modal-cancel {
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .btn-modal-cancel:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-modal-confirm {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .btn-modal-confirm:hover {
+            background: #c82333;
+        }
+
         .settings-message {
             margin-top: 15px;
             padding: 12px;
@@ -550,6 +670,15 @@
                             <option value="30">30 giorni</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label for="use-fake-data" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="use-fake-data" name="use_fake_data" style="width: 20px; height: 20px; cursor: pointer;">
+                            <span>Usa dati fake invece di sincronizzare con Garmin</span>
+                        </label>
+                        <small style="color: #666; font-size: 0.85rem; margin-top: 5px;">
+                            Se attivato, l'app utilizzerà dati generati invece di sincronizzare con Garmin Connect
+                        </small>
+                    </div>
                     <div class="form-actions">
                         <button type="submit" class="btn-save" id="save-settings-btn">Salva</button>
                         <button type="button" class="btn-cancel" onclick="cancelSettings()">Annulla</button>
@@ -557,6 +686,27 @@
                     <div class="settings-message" id="settings-message"></div>
                     <div class="settings-updated" id="settings-updated"></div>
                 </form>
+                
+                <div class="danger-zone">
+                    <h4>⚠️ Zona Pericolosa</h4>
+                    <p>Elimina tutti i dati di sonno salvati. Questa azione è irreversibile.</p>
+                    <button type="button" class="btn-danger" id="delete-all-data-btn" onclick="confirmDeleteAllData()">
+                        🗑️ Elimina Tutti i Dati
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal di conferma eliminazione dati -->
+        <div class="modal-overlay" id="delete-confirm-modal" onclick="if(event.target === this) cancelDeleteAllData()">
+            <div class="modal-content">
+                <h3>⚠️ Conferma Eliminazione</h3>
+                <p>Sei sicuro di voler eliminare <strong>tutti i dati di sonno</strong>? Questa azione è <strong>irreversibile</strong> e non può essere annullata.</p>
+                <p style="color: #dc3545; font-weight: 600;">Tutti i dati storici verranno persi definitivamente.</p>
+                <div class="modal-actions">
+                    <button type="button" class="btn-modal-cancel" onclick="cancelDeleteAllData()">Annulla</button>
+                    <button type="button" class="btn-modal-confirm" id="confirm-delete-btn" onclick="deleteAllData()">Sì, Elimina Tutto</button>
+                </div>
             </div>
         </div>
 

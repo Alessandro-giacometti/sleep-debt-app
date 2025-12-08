@@ -30,7 +30,9 @@ async function loadSleepStatus() {
  */
 function updateUI(data) {
     // Update stats
-    document.getElementById('current-debt').textContent = formatHoursMinutes(data.current_debt);
+    // Show 0 instead of negative debt in the main card (debt cannot be negative)
+    const displayDebt = data.current_debt < 0 ? 0 : data.current_debt;
+    document.getElementById('current-debt').textContent = formatHoursMinutes(displayDebt);
     document.getElementById('total-sleep').textContent = formatHoursMinutes(data.total_sleep_hours);
     document.getElementById('target-sleep').textContent = formatHoursMinutes(data.target_sleep_hours);
     document.getElementById('days-tracked').textContent = data.days_tracked;
@@ -97,7 +99,10 @@ function updateDataTable(data) {
 
     tbody.innerHTML = data.map(item => `
         <tr>
-            <td>${formatDate(item.date)}</td>
+            <td>
+                ${formatDate(item.date)}
+                ${item.is_example ? '<span style="margin-left: 8px; padding: 2px 6px; background: #fff3cd; color: #856404; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">ESEMPIO</span>' : ''}
+            </td>
             <td>${formatHoursMinutes(item.sleep_hours)}</td>
             <td>${formatHoursMinutes(item.target_hours)}</td>
             <td>
@@ -140,7 +145,12 @@ async function syncData() {
         if (result.success) {
             // Reload status after successful sync
             await loadSleepStatus();
-            showSuccess(`Sync completato: ${result.records_synced} record sincronizzati`);
+            // Check if fake data was used and show appropriate message
+            if (result.used_fake_data) {
+                showError(`⚠️ Attenzione: Sync fallito. Utilizzati dati fake: ${result.records_synced} record. ${result.message || ''}`);
+            } else {
+                showSuccess(`Sync completato: ${result.records_synced} record sincronizzati`);
+            }
         } else {
             throw new Error(result.message || 'Sync fallito');
         }
@@ -384,6 +394,7 @@ async function loadSettings() {
         document.getElementById('target-hours-value').textContent = hours;
         document.getElementById('target-minutes-value').textContent = minutes.toString().padStart(2, '0');
         document.getElementById('stats-window-days').value = data.stats_window_days;
+        document.getElementById('use-fake-data').checked = data.use_fake_data || false;
         
         // Update time display and button states
         updateTimeDisplay();
@@ -447,7 +458,8 @@ async function saveSettings(event) {
             },
             body: JSON.stringify({
                 target_sleep_hours: targetHours,
-                stats_window_days: statsWindow
+                stats_window_days: statsWindow,
+                use_fake_data: document.getElementById('use-fake-data').checked
             })
         });
         
@@ -522,5 +534,79 @@ function showSettingsMessage(message, type) {
     const messageEl = document.getElementById('settings-message');
     messageEl.textContent = message;
     messageEl.className = `settings-message ${type} active`;
+}
+
+/**
+ * Show confirmation modal for deleting all data
+ */
+function confirmDeleteAllData() {
+    const modal = document.getElementById('delete-confirm-modal');
+    modal.classList.add('active');
+}
+
+/**
+ * Cancel deletion and close modal
+ */
+function cancelDeleteAllData() {
+    const modal = document.getElementById('delete-confirm-modal');
+    modal.classList.remove('active');
+}
+
+/**
+ * Delete all sleep data after confirmation
+ */
+async function deleteAllData() {
+    const modal = document.getElementById('delete-confirm-modal');
+    const confirmBtn = document.getElementById('confirm-delete-btn');
+    const deleteBtn = document.getElementById('delete-all-data-btn');
+    
+    // Disable buttons during deletion
+    confirmBtn.disabled = true;
+    deleteBtn.disabled = true;
+    confirmBtn.textContent = 'Eliminazione in corso...';
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/sleep/data`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            let errorMessage = `HTTP error! status: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.detail || errorMessage;
+            } catch (e) {
+                const text = await response.text();
+                errorMessage = text.substring(0, 200) || errorMessage;
+            }
+            throw new Error(errorMessage);
+        }
+        
+        const result = await response.json();
+        
+        // Close modal
+        modal.classList.remove('active');
+        
+        // Show success message
+        showSettingsMessage(`✅ ${result.message || `Eliminati ${result.records_deleted || 0} record`}`, 'success');
+        
+        // Reload sleep status to reflect empty data
+        await loadSleepStatus();
+        
+        // Auto-hide success message after 5 seconds
+        setTimeout(() => {
+            const messageEl = document.getElementById('settings-message');
+            messageEl.classList.remove('active');
+        }, 5000);
+        
+    } catch (error) {
+        console.error('Error deleting all data:', error);
+        showSettingsMessage('❌ Errore durante l\'eliminazione: ' + error.message, 'error');
+    } finally {
+        // Re-enable buttons
+        confirmBtn.disabled = false;
+        deleteBtn.disabled = false;
+        confirmBtn.textContent = 'Sì, Elimina Tutto';
+    }
 }
 

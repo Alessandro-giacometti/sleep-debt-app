@@ -19,17 +19,28 @@ TOKENS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _generate_fake_sleep_data(days: int) -> List[Dict]:
-    """Generate fake sleep data for a given number of days."""
+    """Generate fake sleep data for a given number of days with variation."""
+    import random
     fake_data: List[Dict] = []
     today = datetime.now()
 
+    # Import target from config
+    from backend.config import TARGET_SLEEP_HOURS
+    target_hours = TARGET_SLEEP_HOURS()
+    
+    # Base sleep hours around target, with variation
+    base_sleep = target_hours
+
     for i in range(days):
         date = today - timedelta(days=i)
-        # Generate fake sleep data
-        sleep_hours = 7.0 + (i % 4) * 0.5  # Varies between 7.0 and 8.5
-        # Import target from config
-        from backend.config import TARGET_SLEEP_HOURS
-        target_hours = TARGET_SLEEP_HOURS()
+        # Generate varied sleep data: base ± 1.5 hours with some randomness
+        # This creates realistic variation (e.g., 6.5h to 9.5h if target is 8h)
+        variation = (i % 5 - 2) * 0.5  # Cycles: -1.0, -0.5, 0.0, 0.5, 1.0
+        random_offset = random.uniform(-0.3, 0.3)  # Small random variation
+        sleep_hours = round(base_sleep + variation + random_offset, 1)
+        # Clamp to reasonable range (5h to 11h)
+        sleep_hours = max(5.0, min(11.0, sleep_hours))
+        
         debt = calculate_daily_debt(sleep_hours, target_hours)
 
         fake_data.append(
@@ -38,6 +49,7 @@ def _generate_fake_sleep_data(days: int) -> List[Dict]:
                 "sleep_hours": sleep_hours,
                 "target_hours": target_hours,
                 "debt": debt,
+                "is_example": True,  # Mark as example data
             }
         )
 
@@ -376,14 +388,16 @@ def _parse_garmin_sleep_duration(garmin_sleep: Dict) -> Optional[float]:
     return None
 
 
-def sync_sleep_data(days: int = None) -> Dict:
+def sync_sleep_data(days: int = None, use_fake_data: bool = False) -> Dict:
     """Sync sleep data from Garmin Connect and persist it to DuckDB.
     
     This function attempts to fetch real data from Garmin Connect.
-    If credentials are missing or authentication fails, it falls back to fake data.
+    If use_fake_data is True, generates fake data instead.
+    If use_fake_data is False and sync fails, returns error instead of falling back to fake data.
     
     Args:
         days: Number of days to sync (defaults to STATS_WINDOW_DAYS from config)
+        use_fake_data: If True, generate fake data instead of syncing from Garmin (default: False)
         
     Returns:
         Dictionary with sync results
@@ -392,6 +406,41 @@ def sync_sleep_data(days: int = None) -> Dict:
     if days is None:
         days = STATS_WINDOW_DAYS()
     logger.info(f"Starting sleep data sync for last {days} days...")
+    
+    # If use_fake_data is True, generate fake data directly
+    if use_fake_data:
+        logger.info("use_fake_data is True, generating fake data instead of syncing from Garmin")
+        sleep_data = _generate_fake_sleep_data(days)
+        
+        if not sleep_data:
+            return {
+                "success": False,
+                "message": f"Failed to generate fake data",
+                "records_synced": 0,
+                "last_sync": datetime.now().isoformat(),
+                "total_debt": 0.0,
+                "used_fake_data": True,
+            }
+        
+        # Calculate total debt on fake dataset
+        total_debt = calculate_sleep_debt(sleep_data)
+        
+        # Persist fake data to DuckDB, but preserve existing real data
+        # This ensures real data is not overwritten when generating fake data
+        records_written = write_sleep_batch(sleep_data, preserve_real_data=True)
+        
+        logger.info(f"Fake data sync complete: {records_written} fake records written to DuckDB (real data preserved)")
+        
+        message = f"Generated {records_written} fake records ({days} days window)"
+        
+        return {
+            "success": True,
+            "message": message,
+            "records_synced": records_written,
+            "last_sync": datetime.now().isoformat(),
+            "total_debt": total_debt,
+            "used_fake_data": True,
+        }
     
     try:
         # Fetch real data from Garmin
@@ -420,6 +469,7 @@ def sync_sleep_data(days: int = None) -> Dict:
                 "records_synced": records_written,
                 "last_sync": datetime.now().isoformat(),
                 "total_debt": total_debt,
+                "used_fake_data": False,
             }
         else:
             # Authentication succeeded but no sleep data found for requested period
@@ -428,74 +478,28 @@ def sync_sleep_data(days: int = None) -> Dict:
             raise ValueError("No sleep data retrieved from Garmin Connect for the requested period")
         
     except ValueError as e:
-        # Credentials missing or authentication failed - fallback to fake data
-        logger.warning(f"Garmin sync failed: {e}. Falling back to fake data.")
-        sleep_data = _generate_fake_sleep_data(days)
-        
-        if not sleep_data:
-            return {
-                "success": False,
-                "message": f"Sync failed and no fake data could be generated: {str(e)}",
-                "records_synced": 0,
-                "last_sync": datetime.now().isoformat(),
-                "total_debt": 0.0,
-            }
-        
-        # Calculate total debt on fake dataset
-        total_debt = calculate_sleep_debt(sleep_data)
-        
-        # Persist fake data to DuckDB
-        records_written = write_sleep_batch(sleep_data)
-        
-        logger.info(f"Fallback sync complete: {records_written} fake records written to DuckDB")
-        
-        # Build message indicating requested window vs actual records
-        if records_written < days:
-            message = f"Garmin sync failed ({str(e)}). Using fake data for now. {records_written} records synced (requested {days} days window - some days may not have data yet)"
-        else:
-            message = f"Garmin sync failed ({str(e)}). Using fake data for now. {records_written} records synced ({days} days window)"
-        
+        # Credentials missing or authentication failed
+        # Since use_fake_data is False, return error instead of falling back
+        logger.error(f"Garmin sync failed: {e}. use_fake_data is False, returning error.")
         return {
-            "success": True,
-            "message": message,
-            "records_synced": records_written,
+            "success": False,
+            "message": f"Garmin sync failed: {str(e)}. Enable 'use fake data' in settings to use generated data instead.",
+            "records_synced": 0,
             "last_sync": datetime.now().isoformat(),
-            "total_debt": total_debt,
+            "total_debt": 0.0,
+            "used_fake_data": False,
         }
         
     except Exception as e:
-        # Other unexpected errors - fallback to fake data
-        logger.error(f"Unexpected error during Garmin sync: {e}. Falling back to fake data.")
-        sleep_data = _generate_fake_sleep_data(days)
-        
-        if not sleep_data:
-            return {
-                "success": False,
-                "message": f"Sync failed and no fake data could be generated: {str(e)}",
-                "records_synced": 0,
-                "last_sync": datetime.now().isoformat(),
-                "total_debt": 0.0,
-            }
-        
-        # Calculate total debt on fake dataset
-        total_debt = calculate_sleep_debt(sleep_data)
-        
-        # Persist fake data to DuckDB
-        records_written = write_sleep_batch(sleep_data)
-        
-        logger.info(f"Fallback sync complete: {records_written} fake records written to DuckDB")
-        
-        # Build message indicating requested window vs actual records
-        if records_written < days:
-            message = f"Unexpected error during Garmin sync ({str(e)}). Using fake data for now. {records_written} records synced (requested {days} days window - some days may not have data yet)"
-        else:
-            message = f"Unexpected error during Garmin sync ({str(e)}). Using fake data for now. {records_written} records synced ({days} days window)"
-        
+        # Other unexpected errors
+        # Since use_fake_data is False, return error instead of falling back
+        logger.error(f"Unexpected error during Garmin sync: {e}. use_fake_data is False, returning error.")
         return {
-            "success": True,
-            "message": message,
-            "records_synced": records_written,
+            "success": False,
+            "message": f"Unexpected error during Garmin sync: {str(e)}. Enable 'use fake data' in settings to use generated data instead.",
+            "records_synced": 0,
             "last_sync": datetime.now().isoformat(),
-            "total_debt": total_debt,
+            "total_debt": 0.0,
+            "used_fake_data": False,
         }
 

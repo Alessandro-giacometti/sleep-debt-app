@@ -10,6 +10,7 @@ class SleepData(BaseModel):
     sleep_hours: float
     target_hours: float
     debt: float
+    is_example: bool = False  # True if this is example/fake data
 
 
 class SleepStatusResponse(BaseModel):
@@ -22,6 +23,7 @@ class SleepStatusResponse(BaseModel):
     recent_data: list[SleepData]
     has_today_data: bool  # True if sleep data exists for today
     stats_window_days: int  # Number of days used for statistics calculation
+    total_real_data_days: int = 0  # Total number of consecutive days with real data available
 
 
 class SyncResponse(BaseModel):
@@ -30,17 +32,20 @@ class SyncResponse(BaseModel):
     message: str
     records_synced: int
     last_sync: str
+    used_fake_data: bool = False  # True if fake data was used instead of real Garmin data
 
 
 class SettingsRequest(BaseModel):
     """Request model for updating user settings."""
     target_sleep_hours: float
     stats_window_days: int
+    use_fake_data: bool = False
 
 
 class SettingsResponse(BaseModel):
     """Response model for settings endpoint."""
     target_sleep_hours: float
     stats_window_days: int
+    use_fake_data: bool = False
     updated_at: Optional[str]
 
