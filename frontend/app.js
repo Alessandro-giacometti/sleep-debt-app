@@ -5,6 +5,7 @@ const API_BASE_URL = window.location.origin;
 // Load initial data
 document.addEventListener('DOMContentLoaded', () => {
     loadSleepStatus();
+    loadSettings();
 });
 
 /**
@@ -229,5 +230,297 @@ function formatDateTime(date) {
         hour: '2-digit',
         minute: '2-digit'
     });
+}
+
+/**
+ * Toggle settings panel visibility
+ */
+function toggleSettingsPanel() {
+    const content = document.getElementById('settings-content');
+    const toggle = document.getElementById('settings-toggle');
+    
+    content.classList.toggle('active');
+    toggle.classList.toggle('expanded');
+}
+
+/**
+ * Adjust hours by delta (positive or negative)
+ */
+function adjustHours(delta) {
+    const hoursValue = document.getElementById('target-hours-value');
+    let hours = parseInt(hoursValue.textContent) || 0;
+    
+    hours += delta;
+    
+    // Clamp between 0 and 24
+    if (hours < 0) hours = 0;
+    if (hours > 24) hours = 24;
+    
+    // If 24 hours, set minutes to 0
+    if (hours === 24) {
+        const minutesValue = document.getElementById('target-minutes-value');
+        minutesValue.textContent = '00';
+    }
+    
+    hoursValue.textContent = hours;
+    updateTimeDisplay();
+    updateButtonStates();
+}
+
+/**
+ * Adjust minutes by delta (in steps of 15)
+ */
+function adjustMinutes(delta) {
+    const minutesValue = document.getElementById('target-minutes-value');
+    const hoursValue = document.getElementById('target-hours-value');
+    let minutes = parseInt(minutesValue.textContent) || 0;
+    const hours = parseInt(hoursValue.textContent) || 0;
+    
+    minutes += delta;
+    
+    // Handle overflow/underflow
+    if (minutes < 0) {
+        if (hours > 0) {
+            // Decrease hours and wrap minutes
+            const newHours = hours - 1;
+            hoursValue.textContent = newHours;
+            minutes = 60 + minutes; // minutes is negative, so this wraps correctly
+        } else {
+            minutes = 0;
+        }
+    } else if (minutes >= 60) {
+        if (hours < 24) {
+            // Increase hours and wrap minutes
+            const newHours = hours + 1;
+            hoursValue.textContent = newHours;
+            minutes = minutes - 60;
+        } else {
+            // Can't go above 24h, so cap at 0 minutes
+            minutes = 0;
+        }
+    }
+    
+    // If 24 hours, force minutes to 0
+    if (parseInt(hoursValue.textContent) === 24) {
+        minutes = 0;
+    }
+    
+    minutesValue.textContent = minutes.toString().padStart(2, '0');
+    updateTimeDisplay();
+    updateButtonStates();
+}
+
+/**
+ * Update button disabled states based on current values
+ */
+function updateButtonStates() {
+    const hours = parseInt(document.getElementById('target-hours-value').textContent) || 0;
+    const minutes = parseInt(document.getElementById('target-minutes-value').textContent) || 0;
+    
+    // Hours buttons
+    document.getElementById('hours-decrease').disabled = (hours <= 0);
+    document.getElementById('hours-increase').disabled = (hours >= 24);
+    
+    // Minutes buttons
+    const minutesDecrease = document.getElementById('minutes-decrease');
+    const minutesIncrease = document.getElementById('minutes-increase');
+    
+    if (hours === 24) {
+        // At 24 hours, can't increase minutes and should disable decrease if at 0
+        minutesIncrease.disabled = true;
+        minutesDecrease.disabled = (minutes <= 0);
+    } else if (hours === 0 && minutes === 0) {
+        // At 0h:00m, can't decrease minutes
+        minutesDecrease.disabled = true;
+        minutesIncrease.disabled = false;
+    } else {
+        // Normal state
+        minutesDecrease.disabled = false;
+        minutesIncrease.disabled = false;
+    }
+}
+
+/**
+ * Convert decimal hours to hours and minutes
+ */
+function decimalToHoursMinutes(decimalHours) {
+    const hours = Math.floor(decimalHours);
+    const minutes = Math.round((decimalHours - hours) * 60);
+    return { hours, minutes };
+}
+
+/**
+ * Convert hours and minutes to decimal hours
+ */
+function hoursMinutesToDecimal(hours, minutes) {
+    return hours + (minutes / 60);
+}
+
+/**
+ * Update time display when values change
+ */
+function updateTimeDisplay() {
+    const hours = parseInt(document.getElementById('target-hours-value').textContent) || 0;
+    const minutes = parseInt(document.getElementById('target-minutes-value').textContent) || 0;
+    const display = document.getElementById('target-time-display');
+    display.textContent = `${hours}h:${minutes.toString().padStart(2, '0')}m`;
+}
+
+/**
+ * Load settings from API and populate form
+ */
+async function loadSettings() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/settings`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        // Convert decimal hours to hours and minutes
+        const { hours, minutes } = decimalToHoursMinutes(data.target_sleep_hours);
+        
+        // Populate form fields
+        document.getElementById('target-hours-value').textContent = hours;
+        document.getElementById('target-minutes-value').textContent = minutes.toString().padStart(2, '0');
+        document.getElementById('stats-window-days').value = data.stats_window_days;
+        
+        // Update time display and button states
+        updateTimeDisplay();
+        updateButtonStates();
+        
+        // Show updated date if available
+        const updatedEl = document.getElementById('settings-updated');
+        if (data.updated_at) {
+            const updatedDate = new Date(data.updated_at);
+            updatedEl.textContent = `Ultimo aggiornamento: ${formatDateTime(updatedDate)}`;
+        } else {
+            updatedEl.textContent = '';
+        }
+    } catch (error) {
+        console.error('Error loading settings:', error);
+        // Don't show error to user on initial load, just use defaults
+    }
+}
+
+/**
+ * Save settings to API
+ */
+async function saveSettings(event) {
+    event.preventDefault();
+    
+    const saveBtn = document.getElementById('save-settings-btn');
+    const messageEl = document.getElementById('settings-message');
+    
+    // Get form values
+    const hours = parseInt(document.getElementById('target-hours-value').textContent) || 0;
+    const minutes = parseInt(document.getElementById('target-minutes-value').textContent) || 0;
+    const targetHours = hoursMinutesToDecimal(hours, minutes);
+    const statsWindow = parseInt(document.getElementById('stats-window-days').value);
+    
+    // Validate
+    if (targetHours <= 0 || targetHours > 24) {
+        showSettingsMessage('Le ore sonno target devono essere tra 0h:00m e 24h:00m', 'error');
+        return;
+    }
+    
+    if (targetHours === 24 && minutes > 0) {
+        showSettingsMessage('Il massimo è 24h:00m', 'error');
+        return;
+    }
+    
+    if (![7, 14, 30].includes(statsWindow)) {
+        showSettingsMessage('La finestra statistiche deve essere 7, 14 o 30 giorni', 'error');
+        return;
+    }
+    
+    // Disable button and show loading
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Salvataggio...';
+    messageEl.classList.remove('active');
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/settings`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                target_sleep_hours: targetHours,
+                stats_window_days: statsWindow
+            })
+        });
+        
+        if (!response.ok) {
+            // Try to parse JSON error, but handle HTML errors too
+            let errorMessage = `HTTP error! status: ${response.status}`;
+            // Clone the response so we can read it multiple times if needed
+            const clonedResponse = response.clone();
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.detail || errorMessage;
+            } catch (e) {
+                // If response is not JSON (e.g., HTML error page), get text from cloned response
+                try {
+                    const text = await clonedResponse.text();
+                    // Extract meaningful error from HTML if possible
+                    if (text.includes('Internal Server Error') || text.includes('detail')) {
+                        errorMessage = 'Errore interno del server. Riprova più tardi.';
+                    } else {
+                        errorMessage = text.substring(0, 200) || errorMessage; // Limit length
+                    }
+                } catch (textError) {
+                    // If both fail, use default message
+                    errorMessage = `Errore del server (status ${response.status})`;
+                }
+            }
+            throw new Error(errorMessage);
+        }
+        
+        const result = await response.json();
+        
+        // Show success message
+        showSettingsMessage('Impostazioni salvate con successo!', 'success');
+        
+        // Update updated date
+        const updatedEl = document.getElementById('settings-updated');
+        if (result.updated_at) {
+            const updatedDate = new Date(result.updated_at);
+            updatedEl.textContent = `Ultimo aggiornamento: ${formatDateTime(updatedDate)}`;
+        }
+        
+        // Reload sleep status to reflect new settings
+        await loadSleepStatus();
+        
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+            messageEl.classList.remove('active');
+        }, 3000);
+        
+    } catch (error) {
+        console.error('Error saving settings:', error);
+        showSettingsMessage('Errore nel salvataggio: ' + error.message, 'error');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Salva';
+    }
+}
+
+/**
+ * Cancel settings changes and reload from API
+ */
+function cancelSettings() {
+    loadSettings();
+    const messageEl = document.getElementById('settings-message');
+    messageEl.classList.remove('active');
+}
+
+/**
+ * Show message in settings panel
+ */
+function showSettingsMessage(message, type) {
+    const messageEl = document.getElementById('settings-message');
+    messageEl.textContent = message;
+    messageEl.className = `settings-message ${type} active`;
 }
 

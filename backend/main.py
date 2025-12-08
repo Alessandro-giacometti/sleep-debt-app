@@ -8,11 +8,12 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from datetime import datetime
 from starlette.staticfiles import StaticFiles as StarletteStaticFiles
-from backend.models import SleepStatusResponse, SyncResponse, SleepData
+from backend.models import SleepStatusResponse, SyncResponse, SleepData, SettingsRequest, SettingsResponse
 from backend.config import API_HOST, API_PORT, CORS_ORIGINS, ENVIRONMENT
 from db.database import (
     init_database, read_sleep_data, get_sleep_statistics,
-    get_last_sync_time, set_last_sync_time
+    get_last_sync_time, set_last_sync_time, migrate_settings_from_env,
+    get_user_settings, update_user_settings, recalculate_debt_for_all_records, get_connection
 )
 from etl.garmin_sync import sync_sleep_data
 
@@ -21,6 +22,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+logger = logging.getLogger(__name__)
 
 # Get project root directory (parent of backend/)
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
@@ -34,6 +36,10 @@ async def lifespan(app: FastAPI):
     # Startup
     init_database()
     print("Database initialized")
+    # Migrate settings from .env to database if they don't exist
+    migrated = migrate_settings_from_env()
+    if migrated:
+        print("Settings migrated from .env to database")
     yield
     # Shutdown (if needed in future)
     pass
@@ -124,7 +130,7 @@ async def get_sleep_status():
         days_tracked=stats["days_tracked"],
         recent_data=[SleepData(**item) for item in recent_data],
         has_today_data=stats["has_today_data"],
-        stats_window_days=STATS_WINDOW_DAYS
+        stats_window_days=STATS_WINDOW_DAYS()
     )
 
 
@@ -133,7 +139,7 @@ async def sync_sleep():
     """Trigger sleep data synchronization from Garmin."""
     from backend.config import STATS_WINDOW_DAYS
     try:
-        result = sync_sleep_data(days=STATS_WINDOW_DAYS)
+        result = sync_sleep_data(days=STATS_WINDOW_DAYS())
         
         # Save the actual sync timestamp to database
         if result.get("success") and "last_sync" in result:
@@ -158,6 +164,108 @@ async def sync_sleep():
             records_synced=0,
             last_sync=get_last_sync_time() or datetime.now().isoformat()
         )
+
+
+@app.get("/api/settings", response_model=SettingsResponse)
+async def get_settings():
+    """Get current user settings."""
+    from backend.config import get_user_settings_from_db, get_target_sleep_hours, get_stats_window_days
+    
+    try:
+        settings = get_user_settings_from_db()
+        updated_at = None
+        if settings is not None:
+            # Get updated_at from database and convert to string if needed
+            with get_connection() as conn:
+                result = conn.execute(
+                    "SELECT updated_at FROM user_settings WHERE key = 'target_sleep_hours'"
+                ).fetchone()
+                if result and result[0]:
+                    # Convert to string if it's not already
+                    updated_at_value = result[0]
+                    if isinstance(updated_at_value, str):
+                        updated_at = updated_at_value
+                    else:
+                        # If it's a datetime or timestamp object, convert to ISO format
+                        from datetime import datetime
+                        if isinstance(updated_at_value, datetime):
+                            updated_at = updated_at_value.isoformat()
+                        else:
+                            updated_at = str(updated_at_value)
+        
+        return SettingsResponse(
+            target_sleep_hours=get_target_sleep_hours(),
+            stats_window_days=get_stats_window_days(),
+            updated_at=updated_at
+        )
+    except Exception as e:
+        logger.error(f"Error getting settings: {e}", exc_info=True)
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.put("/api/settings", response_model=SettingsResponse)
+async def update_settings(settings: SettingsRequest):
+    """Update user settings and recalculate debt if target hours changed."""
+    from fastapi import HTTPException
+    
+    try:
+        from backend.config import get_user_settings_from_db, get_target_sleep_hours
+        
+        # Validate input
+        if settings.target_sleep_hours <= 0:
+            raise HTTPException(status_code=400, detail="target_sleep_hours must be greater than 0")
+        if settings.stats_window_days < 1:
+            raise HTTPException(status_code=400, detail="stats_window_days must be at least 1")
+        
+        # Get current settings to check if target_hours changed
+        current_settings = get_user_settings_from_db()
+        current_target_hours = get_target_sleep_hours() if current_settings else None
+        
+        # Update settings in database
+        update_user_settings(settings.target_sleep_hours, settings.stats_window_days)
+        
+        # Recalculate debt if target_hours changed (with tolerance for floating point)
+        if current_target_hours is not None and abs(current_target_hours - settings.target_sleep_hours) > 0.001:
+            try:
+                records_updated = recalculate_debt_for_all_records(settings.target_sleep_hours)
+                logger.info(f"Recalculated debt for {records_updated} records with new target: {settings.target_sleep_hours}")
+            except Exception as recalc_error:
+                logger.error(f"Error recalculating debt: {recalc_error}", exc_info=True)
+                # Don't fail the whole request if recalculation fails
+        
+        # Get updated_at from database and convert to string if needed
+        updated_at = None
+        try:
+            with get_connection() as conn:
+                result = conn.execute(
+                    "SELECT updated_at FROM user_settings WHERE key = 'target_sleep_hours'"
+                ).fetchone()
+                if result and result[0]:
+                    # Convert to string if it's not already
+                    updated_at_value = result[0]
+                    if isinstance(updated_at_value, str):
+                        updated_at = updated_at_value
+                    else:
+                        # If it's a datetime or timestamp object, convert to ISO format
+                        from datetime import datetime
+                        if isinstance(updated_at_value, datetime):
+                            updated_at = updated_at_value.isoformat()
+                        else:
+                            updated_at = str(updated_at_value)
+        except Exception as timestamp_error:
+            logger.error(f"Error getting updated_at: {timestamp_error}", exc_info=True)
+            # Don't fail if we can't get timestamp, just leave it None
+        return SettingsResponse(
+            target_sleep_hours=settings.target_sleep_hours,
+            stats_window_days=settings.stats_window_days,
+            updated_at=updated_at
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating settings: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 if __name__ == "__main__":

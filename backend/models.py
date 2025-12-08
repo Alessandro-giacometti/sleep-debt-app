@@ -31,3 +31,16 @@ class SyncResponse(BaseModel):
     records_synced: int
     last_sync: str
 
+
+class SettingsRequest(BaseModel):
+    """Request model for updating user settings."""
+    target_sleep_hours: float
+    stats_window_days: int
+
+
+class SettingsResponse(BaseModel):
+    """Response model for settings endpoint."""
+    target_sleep_hours: float
+    stats_window_days: int
+    updated_at: Optional[str]
+

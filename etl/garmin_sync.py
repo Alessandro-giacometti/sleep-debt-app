@@ -29,7 +29,7 @@ def _generate_fake_sleep_data(days: int) -> List[Dict]:
         sleep_hours = 7.0 + (i % 4) * 0.5  # Varies between 7.0 and 8.5
         # Import target from config
         from backend.config import TARGET_SLEEP_HOURS
-        target_hours = TARGET_SLEEP_HOURS
+        target_hours = TARGET_SLEEP_HOURS()
         debt = calculate_daily_debt(sleep_hours, target_hours)
 
         fake_data.append(
@@ -142,7 +142,7 @@ def _fetch_garmin_sleep_data(days: int) -> List[Dict]:
     today = date.today()
     # Import target from config
     from backend.config import TARGET_SLEEP_HOURS
-    target_hours = TARGET_SLEEP_HOURS
+    target_hours = TARGET_SLEEP_HOURS()
     
     logger.info(f"Fetching sleep data for last {days} days...")
     
@@ -390,7 +390,7 @@ def sync_sleep_data(days: int = None) -> Dict:
     """
     from backend.config import STATS_WINDOW_DAYS
     if days is None:
-        days = STATS_WINDOW_DAYS
+        days = STATS_WINDOW_DAYS()
     logger.info(f"Starting sleep data sync for last {days} days...")
     
     try:

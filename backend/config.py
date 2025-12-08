@@ -53,11 +53,61 @@ else:
     API_HOST = os.getenv("API_HOST", "0.0.0.0")
     API_PORT = int(os.getenv("API_PORT", "8000"))
 
-# Sleep target configuration
-TARGET_SLEEP_HOURS = float(os.getenv("TARGET_SLEEP_HOURS", "8.0"))
+# Sleep target configuration (default from .env, can be overridden by DB)
+_TARGET_SLEEP_HOURS_ENV = float(os.getenv("TARGET_SLEEP_HOURS", "8.0"))
 
-# Statistics window configuration (in days)
-STATS_WINDOW_DAYS = int(os.getenv("STATS_WINDOW_DAYS", "7"))
+# Statistics window configuration (default from .env, can be overridden by DB)
+_STATS_WINDOW_DAYS_ENV = int(os.getenv("STATS_WINDOW_DAYS", "7"))
+
+
+def get_user_settings_from_db() -> dict | None:
+    """Get user settings from database with fallback to .env.
+    
+    Returns:
+        Dictionary with 'target_sleep_hours' and 'stats_window_days' if settings exist in DB,
+        None if settings don't exist (will use .env values)
+    """
+    try:
+        from db.database import get_user_settings
+        return get_user_settings()
+    except Exception:
+        # If database is not initialized or error occurs, return None to use .env
+        return None
+
+
+def get_target_sleep_hours() -> float:
+    """Get target sleep hours from database or .env fallback.
+    
+    Returns:
+        Target sleep hours (from DB if available, otherwise from .env)
+    """
+    settings = get_user_settings_from_db()
+    if settings is not None:
+        return settings.get("target_sleep_hours", _TARGET_SLEEP_HOURS_ENV)
+    return _TARGET_SLEEP_HOURS_ENV
+
+
+def get_stats_window_days() -> int:
+    """Get statistics window days from database or .env fallback.
+    
+    Returns:
+        Statistics window days (from DB if available, otherwise from .env)
+    """
+    settings = get_user_settings_from_db()
+    if settings is not None:
+        return settings.get("stats_window_days", _STATS_WINDOW_DAYS_ENV)
+    return _STATS_WINDOW_DAYS_ENV
+
+
+# For backward compatibility, these are now functions that read dynamically from DB/ENV
+# Use get_target_sleep_hours() and get_stats_window_days() directly, or call these as functions
+def TARGET_SLEEP_HOURS() -> float:
+    """Get target sleep hours (function for dynamic reading from DB/ENV)."""
+    return get_target_sleep_hours()
+
+def STATS_WINDOW_DAYS() -> int:
+    """Get stats window days (function for dynamic reading from DB/ENV)."""
+    return get_stats_window_days()
 
 # CORS configuration
 # Note: Empty list [] in FastAPI CORS blocks ALL requests including same-origin

@@ -27,7 +27,7 @@ def calculate_sleep_debt(sleep_data: List[Dict]) -> float:
         total_debt = sum(
             calculate_daily_debt(
                 record.get('sleep_hours', 0.0),
-                record.get('target_hours', TARGET_SLEEP_HOURS)
+                record.get('target_hours', TARGET_SLEEP_HOURS())
             )
             for record in sleep_data
         )
