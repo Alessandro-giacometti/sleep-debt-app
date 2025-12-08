@@ -69,23 +69,23 @@ function getDebtInfo(debtHours) {
             color: 'var(--color-green)',
             zone: 'Ottimale'
         };
-    } else if (debtHours < 13.5) {
+    } else if (debtHours < 13) {
         return {
             class: 'slight',
             color: 'var(--color-yellow)',
-            zone: 'Lieve mancanza'
+            zone: 'Lieve deficit'
         };
-    } else if (debtHours < 24.383) {
+    } else if (debtHours < 24) {
         return {
             class: 'large',
             color: 'var(--color-orange)',
-            zone: 'Grande mancanza'
+            zone: 'Deficit moderato'
         };
     } else {
         return {
             class: 'critical',
             color: 'var(--color-red)',
-            zone: 'Bisogno di riposo'
+            zone: 'Deficit elevato'
         };
     }
 }
@@ -120,10 +120,19 @@ function formatHoursMinutes(hours) {
     return `${h}h ${m}m`;
 }
 
+/**
+ * Formatta solo le ore (per target giornaliero)
+ */
+function formatHoursOnly(hours) {
+    const h = Math.floor(Math.abs(hours));
+    return `${h}h`;
+}
+
 // Esponi utility functions globalmente
 window.getDebtInfo = getDebtInfo;
 window.formatDebt = formatDebt;
 window.formatHoursMinutes = formatHoursMinutes;
+window.formatHoursOnly = formatHoursOnly;
 
 /**
  * Sync sleep data from Garmin
@@ -133,7 +142,7 @@ async function syncData() {
     
     // Disable button
     syncBtn.disabled = true;
-    syncBtn.textContent = '⏳ Syncing...';
+    syncBtn.textContent = '⏳';
     
     try {
         const response = await fetch(`${API_BASE_URL}/api/sleep/sync`, {
@@ -162,7 +171,7 @@ async function syncData() {
     } finally {
         // Re-enable button
         syncBtn.disabled = false;
-        syncBtn.textContent = '🔄 Sync Now';
+        syncBtn.textContent = '🔄';
     }
 }
 

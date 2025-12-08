@@ -17,6 +17,10 @@ function showHomepage() {
     if (zonePage) {
         zonePage.classList.remove('active');
     }
+    const chartFullscreen = document.getElementById('chart-fullscreen');
+    if (chartFullscreen) {
+        chartFullscreen.classList.remove('active');
+    }
     
     // Aggiorna navbar
     document.querySelectorAll('.navbar-item').forEach(item => {
@@ -29,6 +33,16 @@ function showHomepage() {
  * Mostra pagina impostazioni
  */
 function showSettings() {
+    // Chiudi tutte le pagine overlay
+    const zonePage = document.getElementById('zone-page');
+    if (zonePage) {
+        zonePage.classList.remove('active');
+    }
+    const chartFullscreen = document.getElementById('chart-fullscreen');
+    if (chartFullscreen) {
+        chartFullscreen.classList.remove('active');
+    }
+    
     document.getElementById('homepage').classList.add('hidden');
     document.getElementById('settings-page').classList.add('active');
     

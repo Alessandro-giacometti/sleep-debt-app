@@ -54,25 +54,28 @@ function updateUI(data) {
         todayChangeEl.textContent = '-';
     }
     
-    // Aggiorna card "Dormi oggi"
+    // Aggiorna card "Ore dormite oggi"
     const todaySleepEl = document.getElementById('today-sleep');
     if (data.recent_data && data.recent_data.length > 0 && data.recent_data[0]) {
         const sleepHours = data.recent_data[0].sleep_hours;
+        const targetHours = data.target_sleep_hours || 8;
         todaySleepEl.textContent = window.formatDebt(sleepHours);
-        todaySleepEl.style.color = 'var(--color-green)';
+        // Verde se >= target, rosso se < target
+        todaySleepEl.style.color = sleepHours >= targetHours ? 'var(--color-green)' : 'var(--color-red)';
     } else {
         todaySleepEl.textContent = '-';
+        todaySleepEl.style.color = 'var(--color-text-primary)';
     }
     
-    // Aggiorna card "Obiettivo del sonno"
+    // Aggiorna card "Target sonno giornaliero"
     const targetSleepEl = document.getElementById('target-sleep');
-    targetSleepEl.textContent = window.formatDebt(data.target_sleep_hours);
+    targetSleepEl.textContent = window.formatHoursOnly(data.target_sleep_hours);
     targetSleepEl.style.color = 'var(--color-text-primary)';
     
-    // Aggiorna valore nelle impostazioni
+    // Aggiorna valore nelle impostazioni (solo ore, formato semplice)
     const settingsTargetValueEl = document.getElementById('settings-target-value');
     if (settingsTargetValueEl) {
-        settingsTargetValueEl.textContent = window.formatDebt(data.target_sleep_hours);
+        settingsTargetValueEl.textContent = window.formatHoursOnly(data.target_sleep_hours);
     }
     
     // Aggiorna titolo grafico con numero giorni
