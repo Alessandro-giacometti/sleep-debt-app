@@ -112,16 +112,16 @@ async def root():
 @app.get("/api/sleep/status", response_model=SleepStatusResponse)
 async def get_sleep_status():
     """Get current sleep status and statistics."""
-    # Get current use_fake_data setting to determine if we should include example data
+    # Get current use_dummy_data setting to determine if we should include example data
     from backend.config import get_user_settings_from_db
     settings = get_user_settings_from_db()
-    use_fake_data = settings.get("use_fake_data", False) if settings else False
+    use_dummy_data = settings.get("use_dummy_data", False) if settings else False
     
-    # Get statistics (include example data if use_fake_data is True)
-    stats = get_sleep_statistics(include_example=use_fake_data)
+    # Get statistics (include example data if use_dummy_data is True)
+    stats = get_sleep_statistics(include_example=use_dummy_data)
     
-    # Get recent data (uses STATS_WINDOW_DAYS as default, include example data if use_fake_data is True)
-    recent_data = read_sleep_data(include_example=use_fake_data)
+    # Get recent data (uses STATS_WINDOW_DAYS as default, include example data if use_dummy_data is True)
+    recent_data = read_sleep_data(include_example=use_dummy_data)
     
     # Get actual last sync time from database, or None if no sync has been performed
     last_sync = get_last_sync_time()
@@ -153,12 +153,12 @@ async def sync_sleep():
     """
     from backend.config import get_user_settings_from_db
     try:
-        # Get use_fake_data setting from database
+        # Get use_dummy_data setting from database
         settings = get_user_settings_from_db()
-        use_fake_data = settings.get("use_fake_data", False) if settings else False
+        use_dummy_data = settings.get("use_dummy_data", False) if settings else False
         
         # Always sync 35 days to refresh historical data
-        result = sync_sleep_data(days=35, use_fake_data=use_fake_data)
+        result = sync_sleep_data(days=35, use_dummy_data=use_dummy_data)
         
         # Save the actual sync timestamp to database
         if result.get("success") and "last_sync" in result:
@@ -172,7 +172,7 @@ async def sync_sleep():
             message=result.get("message", f"Synced {result.get('records_synced', 0)} records"),
             records_synced=result.get("records_synced", 0),
             last_sync=last_sync,
-            used_fake_data=result.get("used_fake_data", False)
+            used_dummy_data=result.get("used_dummy_data", False)
         )
     except Exception as e:
         import logging
@@ -183,7 +183,7 @@ async def sync_sleep():
             message=f"Sync failed: {str(e)}",
             records_synced=0,
             last_sync=get_last_sync_time() or datetime.now().isoformat(),
-            used_fake_data=False
+            used_dummy_data=False
         )
 
 
@@ -214,15 +214,15 @@ async def get_settings():
                         else:
                             updated_at = str(updated_at_value)
         
-        # Get use_fake_data from settings (default to False)
-        use_fake_data = False
+        # Get use_dummy_data from settings (default to False)
+        use_dummy_data = False
         if settings is not None:
-            use_fake_data = settings.get("use_fake_data", False)
+            use_dummy_data = settings.get("use_dummy_data", False)
         
         return SettingsResponse(
             target_sleep_hours=get_target_sleep_hours(),
             stats_window_days=get_stats_window_days(),
-            use_fake_data=use_fake_data,
+            use_dummy_data=use_dummy_data,
             updated_at=updated_at
         )
     except Exception as e:
@@ -248,9 +248,9 @@ async def update_settings(settings: SettingsRequest):
         # Get current effective target hours (from DB or .env fallback) to check if target_hours changed
         current_target_hours = get_target_sleep_hours()
         
-        # Get current settings to check if use_fake_data or stats_window_days changed
+        # Get current settings to check if use_dummy_data or stats_window_days changed
         current_settings = get_user_settings_from_db()
-        current_use_fake_data = current_settings.get("use_fake_data", False) if current_settings else False
+        current_use_dummy_data = current_settings.get("use_dummy_data", False) if current_settings else False
         current_stats_window_days = current_settings.get("stats_window_days", 7) if current_settings else 7
         
         # Check if window changed
@@ -276,15 +276,15 @@ async def update_settings(settings: SettingsRequest):
         # Note: count_available_days_in_window handles the case where today has no data
         # by excluding today and counting window_days days (yesterday + previous days)
         # Note: Example data is kept in the database with is_example=True flag
-        # When use_fake_data=True, include example data in queries. When False, exclude it.
+        # When use_dummy_data=True, include example data in queries. When False, exclude it.
         from db.database import count_available_days_in_window, count_example_data_in_window, get_sleep_statistics, count_total_real_data_days
         
-        # Check data availability (include example data if use_fake_data is True)
-        available_days = count_available_days_in_window(settings.stats_window_days, include_example=settings.use_fake_data)
+        # Check data availability (include example data if use_dummy_data is True)
+        available_days = count_available_days_in_window(settings.stats_window_days, include_example=settings.use_dummy_data)
         example_days = count_example_data_in_window(settings.stats_window_days)
         
         # Check if today has data to determine how many days to sync
-        stats_for_sync = get_sleep_statistics(include_example=settings.use_fake_data)
+        stats_for_sync = get_sleep_statistics(include_example=settings.use_dummy_data)
         today_has_data_for_sync = stats_for_sync.get("has_today_data", False)
         
         # Check total real data days available (not just in the window)
@@ -292,14 +292,14 @@ async def update_settings(settings: SettingsRequest):
         # Required days is exactly the window size (if window is 7 days, we need 7 days of data)
         required_days_for_window = settings.stats_window_days
         
-        logger.info(f"Data check: available_days={available_days}, total_real_days={total_real_days}, required_days={required_days_for_window}, use_fake_data={settings.use_fake_data}")
+        logger.info(f"Data check: available_days={available_days}, total_real_days={total_real_days}, required_days={required_days_for_window}, use_dummy_data={settings.use_dummy_data}")
         
         # Only sync if there's insufficient data (not based on window change)
         # Window changes should not trigger automatic sync - user can manually sync if needed
         should_force_sync = False
         if available_days < required_days_for_window:
             # Check if we have real data available (even if not in the current window) before syncing
-            # This is important when switching from fake to real data
+            # This is important when switching from dummy to real data
             if total_real_days >= required_days_for_window:
                 logger.info(f"Insufficient data in window ({available_days} days), but {total_real_days} days of real data available (need {required_days_for_window}). No sync needed - data exists outside window.")
                 should_force_sync = False  # Explicitly set to False
@@ -314,15 +314,15 @@ async def update_settings(settings: SettingsRequest):
         # Track if we've already synced to avoid duplicate syncs
         has_synced = False
         
-        if should_force_sync and not settings.use_fake_data:
+        if should_force_sync and not settings.use_dummy_data:
             # Sync enough days to cover the window (add 1 extra day if today has no data)
             days_to_sync_force = settings.stats_window_days if today_has_data_for_sync else (settings.stats_window_days + 1)
             try:
-                sync_result = sync_sleep_data(days=days_to_sync_force, use_fake_data=False)
+                sync_result = sync_sleep_data(days=days_to_sync_force, use_dummy_data=False)
                 if sync_result.get("success"):
                     logger.info(f"Force sync successful: {sync_result.get('records_synced', 0)} records synced")
                     # Re-check available days after sync
-                    available_days = count_available_days_in_window(settings.stats_window_days, include_example=settings.use_fake_data)
+                    available_days = count_available_days_in_window(settings.stats_window_days, include_example=settings.use_dummy_data)
                     logger.info(f"After force sync: {available_days} days available for {settings.stats_window_days} days window")
                     has_synced = True
                 else:
@@ -330,20 +330,20 @@ async def update_settings(settings: SettingsRequest):
             except Exception as sync_error:
                 logger.warning(f"Force sync failed: {sync_error}")
         
-        # If use_fake_data changed from True to False, check if we need to sync
+        # If use_dummy_data changed from True to False, check if we need to sync
         # Example data remains in DB with is_example=True but is excluded from queries
         # Only sync if we haven't already synced above and if we don't have enough real data
-        if current_use_fake_data and not settings.use_fake_data and not has_synced:
+        if current_use_dummy_data and not settings.use_dummy_data and not has_synced:
             # Check if we have enough real data (example data is already excluded from count_available_days_in_window)
             # Use the already calculated total_real_days from above
             if total_real_days < required_days_for_window:
-                logger.info(f"Switching from fake to real data: only {total_real_days} days of real data available. Need {required_days_for_window} days. Syncing...")
+                logger.info(f"Switching from dummy to real data: only {total_real_days} days of real data available. Need {required_days_for_window} days. Syncing...")
                 try:
                     # Sync enough days to cover the window (add 1 extra day if today has no data)
-                    stats_for_sync_check = get_sleep_statistics(include_example=settings.use_fake_data)
+                    stats_for_sync_check = get_sleep_statistics(include_example=settings.use_dummy_data)
                     today_has_data_check = stats_for_sync_check.get("has_today_data", False)
                     days_to_sync = settings.stats_window_days if today_has_data_check else (settings.stats_window_days + 1)
-                    sync_result = sync_sleep_data(days=days_to_sync, use_fake_data=False)
+                    sync_result = sync_sleep_data(days=days_to_sync, use_dummy_data=False)
                     if sync_result.get("success"):
                         available_days = count_available_days_in_window(settings.stats_window_days)
                         logger.info(f"Sync successful: {available_days} days available for {settings.stats_window_days} days window")
@@ -353,17 +353,17 @@ async def update_settings(settings: SettingsRequest):
                 except Exception as sync_error:
                     logger.warning(f"Sync failed: {sync_error}")
             else:
-                logger.info(f"Switching from fake to real data: sufficient real data available ({total_real_days} days). No sync needed.")
+                logger.info(f"Switching from dummy to real data: sufficient real data available ({total_real_days} days). No sync needed.")
         
-        # If use_fake_data is False and we have example data in the window, check if we need to sync
+        # If use_dummy_data is False and we have example data in the window, check if we need to sync
         # Example data remains in DB with is_example=True but is excluded from queries
-        # (This handles the case where example_days > 0 but use_fake_data wasn't just changed from True to False)
-        if not settings.use_fake_data:
+        # (This handles the case where example_days > 0 but use_dummy_data wasn't just changed from True to False)
+        if not settings.use_dummy_data:
             example_days_current = count_example_data_in_window(settings.stats_window_days)
             if example_days_current > 0 and not has_synced:
-                logger.info(f"use_fake_data is False but found {example_days_current} example data records in window. Example data will be excluded from queries.")
-                # Re-check available days (include example data if use_fake_data is True)
-                available_days = count_available_days_in_window(settings.stats_window_days, include_example=settings.use_fake_data)
+                logger.info(f"use_dummy_data is False but found {example_days_current} example data records in window. Example data will be excluded from queries.")
+                # Re-check available days (include example data if use_dummy_data is True)
+                available_days = count_available_days_in_window(settings.stats_window_days, include_example=settings.use_dummy_data)
                 
                 # Check if we have enough real data (example data is already excluded)
                 # Use the already calculated total_real_days from above
@@ -374,9 +374,9 @@ async def update_settings(settings: SettingsRequest):
                         stats_for_sync_check = get_sleep_statistics()
                         today_has_data_check = stats_for_sync_check.get("has_today_data", False)
                         days_to_sync = settings.stats_window_days if today_has_data_check else (settings.stats_window_days + 1)
-                        sync_result = sync_sleep_data(days=days_to_sync, use_fake_data=False)
+                        sync_result = sync_sleep_data(days=days_to_sync, use_dummy_data=False)
                         if sync_result.get("success"):
-                            available_days = count_available_days_in_window(settings.stats_window_days, include_example=settings.use_fake_data)
+                            available_days = count_available_days_in_window(settings.stats_window_days, include_example=settings.use_dummy_data)
                             logger.info(f"Sync successful: {available_days} days available for {settings.stats_window_days} days window")
                             has_synced = True
                         else:
@@ -386,21 +386,21 @@ async def update_settings(settings: SettingsRequest):
                 else:
                     logger.info(f"Sufficient real data available ({total_real_days} days). No sync needed.")
         
-        # If use_fake_data is False and data is insufficient, try to sync or fallback to smaller window
+        # If use_dummy_data is False and data is insufficient, try to sync or fallback to smaller window
         # The window always includes window_days days (excluding today if today has no data)
         # Only sync if we haven't already synced above
         # get_sleep_statistics is already imported above
-        stats = get_sleep_statistics(include_example=settings.use_fake_data)
+        stats = get_sleep_statistics(include_example=settings.use_dummy_data)
         today_has_data = stats.get("has_today_data", False)
         
         # Only sync if data is insufficient AND we haven't already synced above
-        if not settings.use_fake_data and available_days < settings.stats_window_days and not has_synced:
+        if not settings.use_dummy_data and available_days < settings.stats_window_days and not has_synced:
             # Try automatic sync with Garmin
             # If today has no data, sync one extra day to get the full window_days
             days_to_sync = settings.stats_window_days if today_has_data else (settings.stats_window_days + 1)
             logger.info(f"Data insufficient for {settings.stats_window_days} days window ({available_days} days available). Attempting sync for {days_to_sync} days...")
             try:
-                sync_result = sync_sleep_data(days=days_to_sync, use_fake_data=False)
+                sync_result = sync_sleep_data(days=days_to_sync, use_dummy_data=False)
                 if sync_result.get("success"):
                     # Re-check after sync
                     available_days = count_available_days_in_window(settings.stats_window_days)
@@ -417,9 +417,9 @@ async def update_settings(settings: SettingsRequest):
                     fallback_days_to_sync = fallback_window if today_has_data else (fallback_window + 1)
                     logger.info(f"Trying to sync {fallback_days_to_sync} days for fallback window of {fallback_window} days...")
                     try:
-                        fallback_sync_result = sync_sleep_data(days=fallback_days_to_sync, use_fake_data=False)
+                        fallback_sync_result = sync_sleep_data(days=fallback_days_to_sync, use_dummy_data=False)
                         if fallback_sync_result.get("success"):
-                            fallback_available = count_available_days_in_window(fallback_window, include_example=settings.use_fake_data)
+                            fallback_available = count_available_days_in_window(fallback_window, include_example=settings.use_dummy_data)
                             if fallback_available >= fallback_window:
                                 logger.warning(f"Insufficient data for {settings.stats_window_days} days. Falling back to {fallback_window} days window.")
                                 settings.stats_window_days = fallback_window
@@ -439,24 +439,24 @@ async def update_settings(settings: SettingsRequest):
                 if available_days < 7:
                     raise HTTPException(
                         status_code=400,
-                        detail=f"Insufficient data: only {available_days} days available, but at least 7 days are required. Please sync data or enable 'use fake data' in settings."
+                        detail=f"Insufficient data: only {available_days} days available, but at least 7 days are required. Please sync data or enable 'use dummy data' in settings."
                     )
         
-        # If use_fake_data is True, generate fake data if needed
+        # If use_dummy_data is True, generate dummy data if needed
         # Example data remains in DB with is_example=True and will be included in queries
-        if settings.use_fake_data:
-            # Generate fake data for the requested window (at least 3 days, or window size)
+        if settings.use_dummy_data:
+            # Generate dummy data for the requested window (at least 3 days, or window size)
             days_to_generate = max(3, settings.stats_window_days)
-            logger.info(f"use_fake_data is True. Generating {days_to_generate} days of example data...")
+            logger.info(f"use_dummy_data is True. Generating {days_to_generate} days of example data...")
             try:
-                sync_result = sync_sleep_data(days=days_to_generate, use_fake_data=True)
+                sync_result = sync_sleep_data(days=days_to_generate, use_dummy_data=True)
                 if not sync_result.get("success"):
-                    logger.warning(f"Failed to generate fake data: {sync_result.get('message')}")
-            except Exception as fake_error:
-                logger.error(f"Error generating fake data: {fake_error}")
+                    logger.warning(f"Failed to generate dummy data: {sync_result.get('message')}")
+            except Exception as dummy_error:
+                logger.error(f"Error generating dummy data: {dummy_error}")
         
         # Update settings in database
-        update_user_settings(settings.target_sleep_hours, settings.stats_window_days, settings.use_fake_data)
+        update_user_settings(settings.target_sleep_hours, settings.stats_window_days, settings.use_dummy_data)
         
         # Recalculate debt if target_hours changed (with tolerance for floating point)
         if abs(current_target_hours - settings.target_sleep_hours) > 0.001:
@@ -492,7 +492,7 @@ async def update_settings(settings: SettingsRequest):
         return SettingsResponse(
             target_sleep_hours=settings.target_sleep_hours,
             stats_window_days=settings.stats_window_days,
-            use_fake_data=settings.use_fake_data,
+            use_dummy_data=settings.use_dummy_data,
             updated_at=updated_at
         )
     except HTTPException:

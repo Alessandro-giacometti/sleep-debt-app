@@ -145,9 +145,9 @@ async function syncData() {
         if (result.success) {
             // Reload status after successful sync
             await loadSleepStatus();
-            // Check if fake data was used and show appropriate message
-            if (result.used_fake_data) {
-                showError(`⚠️ Attenzione: Sync fallito. Utilizzati dati fake: ${result.records_synced} record. ${result.message || ''}`);
+            // Check if dummy data was used and show appropriate message
+            if (result.used_dummy_data) {
+                showError(`⚠️ Attenzione: Sync fallito. Utilizzati dati dummy: ${result.records_synced} record. ${result.message || ''}`);
             } else {
                 showSuccess(`Sync completato: ${result.records_synced} record sincronizzati`);
             }
@@ -394,7 +394,7 @@ async function loadSettings() {
         document.getElementById('target-hours-value').textContent = hours;
         document.getElementById('target-minutes-value').textContent = minutes.toString().padStart(2, '0');
         document.getElementById('stats-window-days').value = data.stats_window_days;
-        document.getElementById('use-fake-data').checked = data.use_fake_data || false;
+        document.getElementById('use-dummy-data').checked = data.use_dummy_data || false;
         
         // Update time display and button states
         updateTimeDisplay();
@@ -459,7 +459,7 @@ async function saveSettings(event) {
             body: JSON.stringify({
                 target_sleep_hours: targetHours,
                 stats_window_days: statsWindow,
-                use_fake_data: document.getElementById('use-fake-data').checked
+                use_dummy_data: document.getElementById('use-dummy-data').checked
             })
         });
         

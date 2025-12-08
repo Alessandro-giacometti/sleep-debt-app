@@ -18,7 +18,7 @@ class SleepRecord:
     sleep_hours: float
     target_hours: float
     debt: float
-    is_example: bool = False  # True if this is example/fake data
+    is_example: bool = False  # True if this is example/dummy data
 
 
 @contextmanager
@@ -47,7 +47,7 @@ def init_database() -> bool:
             )
             """
         )
-        # Separate table for example/fake sleep data
+        # Separate table for example/dummy sleep data
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS example_sleep_data (
@@ -217,13 +217,13 @@ def read_sleep_data(limit: int = None, include_example: bool = False) -> List[Di
         
         # Check if today's data exists (using same logic as get_sleep_statistics)
         if include_example:
-            # Only check example data table (when use_fake_data=True, ignore real data completely)
+            # Only check example data table (when use_dummy_data=True, ignore real data completely)
             today_exists = conn.execute(
                 "SELECT COUNT(*) FROM example_sleep_data WHERE date = ?",
                 [today_str]
             ).fetchone()[0] > 0
         else:
-            # Only check real data table (when use_fake_data=False, ignore example data completely)
+            # Only check real data table (when use_dummy_data=False, ignore example data completely)
             today_exists = conn.execute(
                 "SELECT COUNT(*) FROM sleep_data WHERE date = ?",
                 [today_str]
@@ -243,7 +243,7 @@ def read_sleep_data(limit: int = None, include_example: bool = False) -> List[Di
         window_end_str = window_end.isoformat()
         
         if include_example:
-            # Only example data (when use_fake_data=True, ignore real data completely)
+            # Only example data (when use_dummy_data=True, ignore real data completely)
             result = conn.execute(
                 """
                 SELECT
@@ -259,7 +259,7 @@ def read_sleep_data(limit: int = None, include_example: bool = False) -> List[Di
                 [window_start_str, window_end_str],
             ).fetchall()
         else:
-            # Only real data (when use_fake_data=False, ignore example data completely)
+            # Only real data (when use_dummy_data=False, ignore example data completely)
             result = conn.execute(
                 """
                 SELECT
@@ -298,7 +298,7 @@ def get_sleep_statistics(include_example: bool = False) -> Dict:
     days in the window don't have data yet.
     
     Args:
-        include_example: If True, include example/fake data from example_sleep_data table. If False, exclude it.
+        include_example: If True, include example/dummy data from example_sleep_data table. If False, exclude it.
     """
     from datetime import date, timedelta
     from backend.config import STATS_WINDOW_DAYS
@@ -313,13 +313,13 @@ def get_sleep_statistics(include_example: bool = False) -> Dict:
         
         # Check if today's data exists (considering include_example flag)
         if include_example:
-            # Only check example data table (when use_fake_data=True, ignore real data completely)
+            # Only check example data table (when use_dummy_data=True, ignore real data completely)
             today_exists = conn.execute(
                 "SELECT COUNT(*) FROM example_sleep_data WHERE date = ?",
                 [today_str]
             ).fetchone()[0] > 0
         else:
-            # Only check real data table (when use_fake_data=False, ignore example data completely)
+            # Only check real data table (when use_dummy_data=False, ignore example data completely)
             today_exists = conn.execute(
                 "SELECT COUNT(*) FROM sleep_data WHERE date = ?",
                 [today_str]
@@ -344,7 +344,7 @@ def get_sleep_statistics(include_example: bool = False) -> Dict:
         # This query will return data only for days that exist in the database
         # within the calculated window
         if include_example:
-            # Only example data (when use_fake_data=True, ignore real data completely)
+            # Only example data (when use_dummy_data=True, ignore real data completely)
             agg = conn.execute(
                 """
                 SELECT
@@ -358,7 +358,7 @@ def get_sleep_statistics(include_example: bool = False) -> Dict:
                 [window_start_str, window_end_str]
             ).fetchone()
         else:
-            # Only real data from sleep_data table (when use_fake_data=False, ignore example data completely)
+            # Only real data from sleep_data table (when use_dummy_data=False, ignore example data completely)
             agg = conn.execute(
                 """
                 SELECT
@@ -403,7 +403,7 @@ def count_available_days_in_window(window_days: int, include_example: bool = Fal
     
     Args:
         window_days: Number of days in the window to check
-        include_example: If True, include example/fake data from example_sleep_data table. If False, exclude it.
+        include_example: If True, include example/dummy data from example_sleep_data table. If False, exclude it.
         
     Returns:
         Number of days with data available in the window
@@ -419,7 +419,7 @@ def count_available_days_in_window(window_days: int, include_example: bool = Fal
         
         # Check if today's data exists (considering include_example flag)
         if include_example:
-            # Only check example data table (when use_fake_data=True, ignore real data completely)
+            # Only check example data table (when use_dummy_data=True, ignore real data completely)
             today_exists = conn.execute(
                 "SELECT COUNT(*) FROM example_sleep_data WHERE date = ?",
                 [today_str]
@@ -443,7 +443,7 @@ def count_available_days_in_window(window_days: int, include_example: bool = Fal
         
         # Count days with data in the window (use only one table based on flag)
         if include_example:
-            # Only count from example data table (when use_fake_data=True, ignore real data completely)
+            # Only count from example data table (when use_dummy_data=True, ignore real data completely)
             result = conn.execute(
                 """
                 SELECT COUNT(*) 
@@ -453,7 +453,7 @@ def count_available_days_in_window(window_days: int, include_example: bool = Fal
                 [window_start_str, window_end_str]
             ).fetchone()
         else:
-            # Only count from real data table (when use_fake_data=False, ignore example data completely)
+            # Only count from real data table (when use_dummy_data=False, ignore example data completely)
             result = conn.execute(
                 """
                 SELECT COUNT(*) 
@@ -504,7 +504,7 @@ def count_total_real_data_days() -> int:
 
 
 def delete_example_data() -> int:
-    """Delete all example/fake data from the example_sleep_data table.
+    """Delete all example/dummy data from the example_sleep_data table.
     
     Returns:
         Number of records deleted
@@ -650,9 +650,9 @@ def get_user_settings() -> Optional[Dict[str, Any]]:
             ["stats_window_days"]
         ).fetchone()
         
-        use_fake_result = conn.execute(
+        use_dummy_result = conn.execute(
             "SELECT value FROM user_settings WHERE key = ?",
-            ["use_fake_data"]
+            ["use_dummy_data"]
         ).fetchone()
         
         if target_result and stats_result:
@@ -660,22 +660,22 @@ def get_user_settings() -> Optional[Dict[str, Any]]:
                 "target_sleep_hours": float(target_result[0]),
                 "stats_window_days": int(stats_result[0])
             }
-            # use_fake_data defaults to False if not set
-            if use_fake_result:
-                result["use_fake_data"] = use_fake_result[0].lower() == "true"
+            # use_dummy_data defaults to False if not set
+            if use_dummy_result:
+                result["use_dummy_data"] = use_dummy_result[0].lower() == "true"
             else:
-                result["use_fake_data"] = False
+                result["use_dummy_data"] = False
             return result
         return None
 
 
-def update_user_settings(target_hours: float, stats_window_days: int, use_fake_data: bool = False) -> bool:
+def update_user_settings(target_hours: float, stats_window_days: int, use_dummy_data: bool = False) -> bool:
     """Update user settings in database.
     
     Args:
         target_hours: Target sleep hours per day
         stats_window_days: Number of days for statistics window
-        use_fake_data: Whether to use fake data instead of real Garmin data (default: False)
+        use_dummy_data: Whether to use dummy data instead of real Garmin data (default: False)
         
     Returns:
         True if successful
@@ -723,16 +723,16 @@ def update_user_settings(target_hours: float, stats_window_days: int, use_fake_d
             [str(stats_window_days), now]
         )
         
-        # Update or insert use_fake_data
+        # Update or insert use_dummy_data
         conn.execute(
             """
             INSERT INTO user_settings (key, value, updated_at)
-            VALUES ('use_fake_data', ?, ?)
+            VALUES ('use_dummy_data', ?, ?)
             ON CONFLICT (key) DO UPDATE SET
                 value = excluded.value,
                 updated_at = excluded.updated_at
             """,
-            [str(use_fake_data).lower(), now]
+            [str(use_dummy_data).lower(), now]
         )
     
     return True
@@ -755,8 +755,8 @@ def migrate_settings_from_env() -> bool:
     # Read from config (which reads from .env)
     from backend.config import TARGET_SLEEP_HOURS, STATS_WINDOW_DAYS
     
-    # Migrate to database with default use_fake_data=False
-    update_user_settings(TARGET_SLEEP_HOURS(), STATS_WINDOW_DAYS(), use_fake_data=False)
+    # Migrate to database with default use_dummy_data=False
+    update_user_settings(TARGET_SLEEP_HOURS(), STATS_WINDOW_DAYS(), use_dummy_data=False)
     return True
 
 
@@ -764,7 +764,7 @@ def recalculate_debt_for_all_records(target_hours: float) -> int:
     """Recalculate debt for all sleep records using new target hours.
     
     This function updates both sleep_data and example_sleep_data tables,
-    since either table may be in use depending on the use_fake_data setting.
+    since either table may be in use depending on the use_dummy_data setting.
     
     Args:
         target_hours: New target sleep hours to use for recalculation
