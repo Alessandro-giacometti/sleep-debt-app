@@ -21,15 +21,24 @@ function updateSettingsUI(settings) {
         }
     }
     
-    // Aggiorna selettore finestra giorni (attiva il bottone corretto)
-    const windowDays = settings.stats_window_days || 7;
-    document.querySelectorAll('.pill-btn').forEach(btn => {
-        btn.classList.remove('active');
-        const btnDays = parseInt(btn.textContent.replace(' giorni', ''));
-        if (btnDays === windowDays) {
-            btn.classList.add('active');
-        }
+    // Aggiorna selettore finestra giorni (attiva l'opzione corretta)
+    const windowDays = settings.stats_window_days || 10;
+    document.querySelectorAll('.window-option').forEach(option => {
+        option.classList.remove('selected');
     });
+    document.querySelectorAll('.window-option-check').forEach(check => {
+        check.textContent = '';
+    });
+    
+    // Trova e seleziona l'opzione corretta
+    const optionEl = document.querySelector(`.window-option[onclick*="${windowDays}"]`);
+    if (optionEl) {
+        optionEl.classList.add('selected');
+        const checkEl = document.getElementById(`window-check-${windowDays}`);
+        if (checkEl) {
+            checkEl.textContent = '✓';
+        }
+    }
     
     // Aggiorna picker target sonno SOLO se la sub-pagina NON è attiva
     // (per evitare di sovrascrivere il valore che l'utente sta modificando)
@@ -41,25 +50,42 @@ function updateSettingsUI(settings) {
  * Selettore finestra giorni (solo UI, non salva)
  */
 function selectWindow(days) {
-    // Aggiorna UI
+    // Aggiorna UI - rimuovi selected da tutte le opzioni
+    document.querySelectorAll('.window-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    // Aggiungi selected all'opzione cliccata
+    const optionEl = document.querySelector(`.window-option[onclick*="${days}"]`);
+    if (optionEl) {
+        optionEl.classList.add('selected');
+    }
+    
+    // Aggiorna anche i checkmark
+    document.querySelectorAll('.window-option-check').forEach(check => {
+        check.textContent = '';
+    });
+    const checkEl = document.getElementById(`window-check-${days}`);
+    if (checkEl) {
+        checkEl.textContent = '✓';
+    }
+    
+    // Salva valore per il salvataggio
     if (window.currentWindow !== undefined) {
         window.currentWindow = days;
-    }
-    document.querySelectorAll('.pill-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    if (event && event.target) {
-        event.target.classList.add('active');
     }
 }
 
 /**
- * Toggle "Valuta di più gli ultimi giorni"
+ * Toggle "Valuta di più gli ultimi giorni" (placeholder)
  */
 function toggleWeight() {
-    const toggle = document.getElementById('weight-toggle');
-    if (toggle) {
-        toggle.classList.toggle('active');
+    const toggle = document.getElementById('weight-toggle-slider');
+    const toggleContainer = toggle?.parentElement;
+    if (toggleContainer) {
+        toggleContainer.classList.toggle('active');
+        // TODO: Implementare logica di salvataggio quando sarà implementata la funzionalità
+        console.log('Weight toggle:', toggleContainer.classList.contains('active') ? 'on' : 'off');
     }
 }
 
@@ -469,14 +495,18 @@ async function saveSettings() {
     
     // Se siamo nella sub-pagina window, leggi da lì
     if (windowSubpage && windowSubpage.classList.contains('active')) {
-        // Trova il bottone attivo
-        const activeBtn = document.querySelector('.pill-btn.active');
-        if (activeBtn) {
-            statsWindow = parseInt(activeBtn.textContent.replace(' giorni', ''));
+        // Trova l'opzione selezionata
+        const selectedOption = document.querySelector('.window-option.selected');
+        if (selectedOption) {
+            const onclickAttr = selectedOption.getAttribute('onclick');
+            const match = onclickAttr.match(/selectWindow\((\d+)\)/);
+            if (match) {
+                statsWindow = parseInt(match[1]);
+            }
         }
     } else {
         // Altrimenti usa il valore corrente
-        statsWindow = window.currentWindow || 7;
+        statsWindow = window.currentWindow || 10;
     }
     
     // Valida
@@ -485,8 +515,8 @@ async function saveSettings() {
         return;
     }
     
-    if (statsWindow !== null && ![7, 14, 30].includes(statsWindow)) {
-        showSettingsMessage('La finestra statistiche deve essere 7, 14 o 30 giorni', 'error');
+    if (statsWindow !== null && ![7, 10, 14].includes(statsWindow)) {
+        showSettingsMessage('La finestra statistiche deve essere 7, 10 o 14 giorni', 'error');
         return;
     }
     
@@ -686,14 +716,22 @@ function showSettingsSubpage(type) {
     if (type === 'window') {
         document.getElementById('settings-window-subpage').classList.add('active');
         // Inizializza selettore con valore corrente
-        const currentWindow = window.currentWindow || 7;
-        document.querySelectorAll('.pill-btn').forEach(btn => {
-            btn.classList.remove('active');
-            const btnDays = parseInt(btn.textContent.replace(' giorni', ''));
-            if (btnDays === currentWindow) {
-                btn.classList.add('active');
-            }
+        const currentWindow = window.currentWindow || window.sleepData?.stats_window_days || 10;
+        document.querySelectorAll('.window-option').forEach(option => {
+            option.classList.remove('selected');
         });
+        document.querySelectorAll('.window-option-check').forEach(check => {
+            check.textContent = '';
+        });
+        
+        const optionEl = document.querySelector(`.window-option[onclick*="${currentWindow}"]`);
+        if (optionEl) {
+            optionEl.classList.add('selected');
+            const checkEl = document.getElementById(`window-check-${currentWindow}`);
+            if (checkEl) {
+                checkEl.textContent = '✓';
+            }
+        }
     } else if (type === 'target') {
         const targetSubpage = document.getElementById('settings-target-subpage');
         targetSubpage.classList.add('active');

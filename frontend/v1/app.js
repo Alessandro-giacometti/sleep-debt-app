@@ -38,7 +38,7 @@ function updateUI(data) {
     document.getElementById('days-tracked').textContent = data.days_tracked;
 
     // Update titles with window days (if available)
-    const windowDays = data.stats_window_days || 7;
+    const windowDays = data.stats_window_days || 10;
     document.getElementById('debt-title').textContent = `Sleep Debt (${windowDays} giorni)`;
     document.getElementById('sleep-title').textContent = `Sonno Totale (${windowDays} giorni)`;
     document.getElementById('target-title').textContent = `Target Sonno (giornaliero)`;
@@ -440,8 +440,8 @@ async function saveSettings(event) {
         return;
     }
     
-    if (![7, 14, 30].includes(statsWindow)) {
-        showSettingsMessage('La finestra statistiche deve essere 7, 14 o 30 giorni', 'error');
+    if (![7, 10, 14].includes(statsWindow)) {
+        showSettingsMessage('La finestra statistiche deve essere 7, 10 o 14 giorni', 'error');
         return;
     }
     

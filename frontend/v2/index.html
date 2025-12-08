@@ -158,13 +158,49 @@
     <div id="settings-window-subpage" class="settings-subpage">
         <div class="settings-subpage-header">
             <button class="settings-subpage-back" onclick="closeSettingsSubpage()">‹</button>
-            <h2 class="settings-subpage-title">Finestra mobile del debito</h2>
+            <h2 class="settings-subpage-title">Finestra giorni di calcolo</h2>
         </div>
-        <div class="pill-selector">
-            <button class="pill-btn active" onclick="selectWindow(7)">7 giorni</button>
-            <button class="pill-btn" onclick="selectWindow(14)">14 giorni</button>
-            <button class="pill-btn" onclick="selectWindow(30)">30 giorni</button>
+        
+        <div class="window-settings-content">
+            <!-- Sezione Finestra Calcolo -->
+            <div class="window-section">
+                <div class="window-section-title">FINESTRA DI CALCOLO DEBITO SONNO</div>
+                <div class="window-options-card">
+                    <div class="window-option" onclick="selectWindow(7)">
+                        <span class="window-option-label">7 giorni</span>
+                        <span class="window-option-check" id="window-check-7"></span>
+                    </div>
+                    <div class="window-option" onclick="selectWindow(10)">
+                        <span class="window-option-label">10 giorni <span class="window-option-recommended">(Raccomandato)</span></span>
+                        <span class="window-option-check" id="window-check-10">✓</span>
+                    </div>
+                    <div class="window-option" onclick="selectWindow(14)">
+                        <span class="window-option-label">14 giorni</span>
+                        <span class="window-option-check" id="window-check-14"></span>
+                    </div>
+                </div>
+                <div class="window-section-description">
+                    La finestra di calcolo definisce quanti giorni recenti vengono utilizzati per determinare il debito di sonno attuale. Una finestra di 7 giorni risulta molto reattiva alle variazioni recenti del sonno, mentre una finestra di 14 giorni garantisce maggiore stabilità, evidenziando le tendenze a lungo termine. La finestra di 10 giorni consigliata rappresenta un equilibrio ottimale tra sensibilità e stabilità per la maggior parte degli utenti.
+                </div>
+            </div>
+
+            <!-- Sezione Metodo Calcolo -->
+            <div class="window-section">
+                <div class="window-section-title">METODO DI CALCOLO</div>
+                <div class="window-method-card">
+                    <div class="window-method-row">
+                        <span class="window-method-label">Valuta di più gli ultimi giorni</span>
+                        <div class="window-method-toggle" onclick="toggleWeight()">
+                            <div class="window-method-toggle-slider" id="weight-toggle-slider"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="window-section-description">
+                    I calcoli ponderati rappresentano in modo più accurato come il corpo recupera il sonno perso, dando maggiore importanza ai giorni più recenti. Disattivando questa opzione, tutti i giorni nella finestra avranno lo stesso peso, semplificando il calcolo.
+                </div>
+            </div>
         </div>
+
         <div class="settings-subpage-actions">
             <button class="settings-save-btn" id="settings-save-btn-window" onclick="saveSettings()">Salva</button>
         </div>

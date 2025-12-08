@@ -98,7 +98,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: var(--color-background);
+    background: var(--color-gray-light);
     z-index: 3000;
     overflow-y: auto;
 }
@@ -113,6 +113,9 @@
     padding: var(--spacing-md);
     background: var(--color-background);
     border-bottom: 1px solid var(--color-gray-medium);
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .settings-subpage-back {
@@ -146,30 +149,139 @@
     margin-right: 36px; /* Compensa il bottone back */
 }
 
-/* Selettore Pill Style (per sotto-pagina) */
-.pill-selector {
+/* Window Settings Layout */
+.window-settings-content {
+    padding: var(--spacing-md);
+    padding-bottom: var(--spacing-lg);
+}
+
+.window-section {
+    margin-bottom: var(--spacing-xl);
+}
+
+.window-section-title {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-sm);
+}
+
+.window-options-card {
+    background: var(--color-background);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-md);
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.window-option {
     display: flex;
-    gap: var(--spacing-sm);
-    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md);
+    cursor: pointer;
+    transition: background 0.2s;
+    border-bottom: 1px solid var(--color-gray-light);
+}
+
+.window-option:last-child {
+    border-bottom: none;
+}
+
+.window-option:active {
+    background: var(--color-gray-light);
+}
+
+.window-option-label {
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+    flex: 1;
+}
+
+.window-option-recommended {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    font-weight: normal;
+    margin-left: var(--spacing-xs);
+}
+
+.window-option-check {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-lg);
+    color: var(--color-primary);
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.window-option.selected .window-option-check {
+    opacity: 1;
+}
+
+.window-section-description {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    padding: 0 var(--spacing-xs);
+}
+
+.window-method-card {
+    background: var(--color-background);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-md);
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.window-method-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: var(--spacing-md);
 }
 
-.pill-btn {
-    padding: var(--spacing-sm) var(--spacing-lg);
-    border: 1px solid var(--color-gray-medium);
-    background: var(--color-background);
-    border-radius: var(--radius-full);
+.window-method-label {
     font-size: var(--font-size-base);
     color: var(--color-text-primary);
-    cursor: pointer;
-    transition: all 0.2s;
-    font-weight: 500;
+    flex: 1;
 }
 
-.pill-btn.active {
+.window-method-toggle {
+    width: 50px;
+    height: 30px;
+    background: var(--color-gray-medium);
+    border-radius: 15px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.window-method-toggle.active {
     background: var(--color-green);
-    color: var(--color-background);
-    border-color: var(--color-green);
+}
+
+.window-method-toggle-slider {
+    width: 26px;
+    height: 26px;
+    background: var(--color-background);
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.window-method-toggle.active .window-method-toggle-slider {
+    transform: translateX(20px);
 }
 
 /* Picker Target Sonno (per sotto-pagina) - Nuovo Design */
@@ -191,7 +303,8 @@
     border-radius: var(--radius-lg);
     padding: var(--spacing-lg);
     margin-bottom: var(--spacing-md);
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .target-picker-scrollable {

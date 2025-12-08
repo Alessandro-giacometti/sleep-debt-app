@@ -278,7 +278,7 @@ async def update_settings(settings: SettingsRequest):
         # Get current settings to check if use_dummy_data or stats_window_days changed
         current_settings = get_user_settings_from_db()
         current_use_dummy_data = current_settings.get("use_dummy_data", False) if current_settings else False
-        current_stats_window_days = current_settings.get("stats_window_days", 7) if current_settings else 7
+        current_stats_window_days = current_settings.get("stats_window_days", 10) if current_settings else 10
         
         # Check if window changed
         window_changed = current_stats_window_days != settings.stats_window_days
@@ -437,7 +437,7 @@ async def update_settings(settings: SettingsRequest):
             
             # If still insufficient, try fallback to smaller windows
             if available_days < settings.stats_window_days:
-                fallback_windows = [14, 7] if settings.stats_window_days == 30 else ([7] if settings.stats_window_days == 14 else [])
+                fallback_windows = [10, 7] if settings.stats_window_days == 14 else ([7] if settings.stats_window_days == 10 else [])
                 
                 for fallback_window in fallback_windows:
                     # Try to sync one extra day if today has no data

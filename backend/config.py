@@ -57,7 +57,7 @@ else:
 _TARGET_SLEEP_HOURS_ENV = float(os.getenv("TARGET_SLEEP_HOURS", "8.0"))
 
 # Statistics window configuration (default from .env, can be overridden by DB)
-_STATS_WINDOW_DAYS_ENV = int(os.getenv("STATS_WINDOW_DAYS", "7"))
+_STATS_WINDOW_DAYS_ENV = int(os.getenv("STATS_WINDOW_DAYS", "10"))
 
 
 def get_user_settings_from_db() -> dict | None:
