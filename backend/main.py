@@ -2,9 +2,9 @@
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from datetime import datetime
 from starlette.staticfiles import StaticFiles as StarletteStaticFiles
@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
 FRONTEND_HTML = FRONTEND_DIR / "index.html"
+FRONTEND_V1_HTML = FRONTEND_DIR / "v1" / "index.html"
+FRONTEND_V2_HTML = FRONTEND_DIR / "v2" / "index.html"
 
 
 @asynccontextmanager
@@ -90,15 +92,40 @@ class NoCacheStaticFiles(StarletteStaticFiles):
         await super().__call__(scope, receive, send_wrapper)
 
 # Mount static files for frontend assets (after middleware, before routes)
+# Serve static files from frontend root, v1, and v2
 app.mount("/static", NoCacheStaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 
 @app.get("/")
 async def root():
-    """Root endpoint - serve frontend HTML."""
-    with open(FRONTEND_HTML, "r", encoding="utf-8") as f:
+    """Root endpoint - redirect to v2 UI."""
+    return RedirectResponse(url="/ui/v2")
+
+
+@app.get("/ui/v1")
+async def ui_v1():
+    """Serve v1 legacy UI."""
+    if not FRONTEND_V1_HTML.exists():
+        raise HTTPException(status_code=404, detail="v1 UI not found")
+    with open(FRONTEND_V1_HTML, "r", encoding="utf-8") as f:
         content = f.read()
-    # Add no-cache headers to prevent browser caching during development
+    return HTMLResponse(
+        content=content,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
+
+
+@app.get("/ui/v2")
+async def ui_v2():
+    """Serve v2 new UI."""
+    if not FRONTEND_V2_HTML.exists():
+        raise HTTPException(status_code=404, detail="v2 UI not found")
+    with open(FRONTEND_V2_HTML, "r", encoding="utf-8") as f:
+        content = f.read()
     return HTMLResponse(
         content=content,
         headers={

@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleep Debt Tracker</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛏️</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card .value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .unit {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .debt-indicator {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .debt-positive {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .debt-negative {
+            background: #51cf66;
+            color: white;
+        }
+
+        .sync-section {
+            text-align: center;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .last-sync {
+            margin-top: 15px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .recent-data {
+            margin-top: 20px;
+        }
+
+        .recent-data h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .error {
+            display: none;
+            background: #ff6b6b;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .chart-placeholder {
+            height: 200px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 1.1rem;
+            margin-top: 20px;
+        }
+
+        .settings-panel {
+            margin-bottom: 20px;
+        }
+
+        .settings-toggle {
+            background: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .settings-toggle:hover {
+            background: #f8f9fa;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .settings-toggle .icon {
+            transition: transform 0.3s ease;
+        }
+
+        .settings-toggle.expanded .icon {
+            transform: rotate(180deg);
+        }
+
+        .settings-content {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .settings-content.active {
+            display: block;
+        }
+
+        .settings-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .form-group input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .time-selectors {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .time-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1;
+        }
+
+        .time-selector label {
+            font-size: 0.85rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .time-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .time-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .time-btn:hover {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+
+        .time-btn:active {
+            transform: scale(0.95);
+        }
+
+        .time-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .time-value {
+            flex: 1;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            padding: 8px;
+            min-width: 50px;
+        }
+
+        .time-display {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #667eea;
+            padding: 12px;
+            text-align: center;
+            background: #f8f9fa;
+            border-radius: 8px;
+            min-width: 100px;
+        }
+
+        .form-group select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group select:hover {
+            border-color: #667eea;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-save:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-cancel {
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-top: 20px;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-danger:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .danger-zone {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .danger-zone h4 {
+            color: #dc3545;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .danger-zone p {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        /* Modal overlay for confirmation */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-content h3 {
+            color: #dc3545;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .modal-content p {
+            color: #333;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-modal-cancel {
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .btn-modal-cancel:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-modal-confirm {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .btn-modal-confirm:hover {
+            background: #c82333;
+        }
+
+        .settings-message {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .settings-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .settings-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .settings-message.active {
+            display: block;
+        }
+
+        .settings-updated {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #666;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .data-table {
+                font-size: 0.9rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 8px;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .btn-save,
+            .btn-cancel {
+                width: 100%;
+            }
+
+            .time-selectors {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .time-display {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>😴 Sleep Debt Tracker</h1>
+            <p>Monitora il tuo debito di sonno</p>
+            <a href="/ui/v2" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: white; color: #667eea; border-radius: 25px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.3s ease;">
+                ✨ Prova la nuova UI
+            </a>
+        </div>
+
+        <div class="settings-panel">
+            <button class="settings-toggle" id="settings-toggle" onclick="toggleSettingsPanel()">
+                <span>⚙️ Impostazioni</span>
+                <span class="icon">▼</span>
+            </button>
+            <div class="settings-content" id="settings-content">
+                <form class="settings-form" id="settings-form" onsubmit="saveSettings(event)">
+                    <div class="form-group">
+                        <label for="target-sleep-hours">Ore sonno target (per giorno)</label>
+                        <div class="time-selectors">
+                            <div class="time-selector">
+                                <label for="target-hours">Ore</label>
+                                <div class="time-control">
+                                    <button type="button" class="time-btn" id="hours-decrease" onclick="adjustHours(-1)">−</button>
+                                    <span class="time-value" id="target-hours-value">8</span>
+                                    <button type="button" class="time-btn" id="hours-increase" onclick="adjustHours(1)">+</button>
+                                </div>
+                            </div>
+                            <div class="time-selector">
+                                <label for="target-minutes">Minuti</label>
+                                <div class="time-control">
+                                    <button type="button" class="time-btn" id="minutes-decrease" onclick="adjustMinutes(-15)">−</button>
+                                    <span class="time-value" id="target-minutes-value">00</span>
+                                    <button type="button" class="time-btn" id="minutes-increase" onclick="adjustMinutes(15)">+</button>
+                                </div>
+                            </div>
+                            <div class="time-display" id="target-time-display">8h:00m</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="stats-window-days">Finestra statistiche (giorni)</label>
+                        <select id="stats-window-days" name="stats_window_days" required>
+                            <option value="7">7 giorni (standard)</option>
+                            <option value="14">14 giorni</option>
+                            <option value="30">30 giorni</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="use-dummy-data" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="use-dummy-data" name="use_dummy_data" style="width: 20px; height: 20px; cursor: pointer;">
+                            <span>Usa dati dummy invece di sincronizzare con Garmin</span>
+                        </label>
+                        <small style="color: #666; font-size: 0.85rem; margin-top: 5px;">
+                            Se attivato, l'app utilizzerà dati generati invece di sincronizzare con Garmin Connect
+                        </small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-save" id="save-settings-btn">Salva</button>
+                        <button type="button" class="btn-cancel" onclick="cancelSettings()">Annulla</button>
+                    </div>
+                    <div class="settings-message" id="settings-message"></div>
+                    <div class="settings-updated" id="settings-updated"></div>
+                </form>
+                
+                <div class="danger-zone">
+                    <h4>⚠️ Zona Pericolosa</h4>
+                    <p>Elimina tutti i dati di sonno salvati. Questa azione è irreversibile.</p>
+                    <button type="button" class="btn-danger" id="delete-all-data-btn" onclick="confirmDeleteAllData()">
+                        🗑️ Elimina Tutti i Dati
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal di conferma eliminazione dati -->
+        <div class="modal-overlay" id="delete-confirm-modal" onclick="if(event.target === this) cancelDeleteAllData()">
+            <div class="modal-content">
+                <h3>⚠️ Conferma Eliminazione</h3>
+                <p>Sei sicuro di voler eliminare <strong>tutti i dati di sonno</strong>? Questa azione è <strong>irreversibile</strong> e non può essere annullata.</p>
+                <p style="color: #dc3545; font-weight: 600;">Tutti i dati storici verranno persi definitivamente.</p>
+                <div class="modal-actions">
+                    <button type="button" class="btn-modal-cancel" onclick="cancelDeleteAllData()">Annulla</button>
+                    <button type="button" class="btn-modal-confirm" id="confirm-delete-btn" onclick="deleteAllData()">Sì, Elimina Tutto</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3 id="debt-title">Sleep Debt</h3>
+                <div class="value" id="current-debt">-</div>
+                <div class="unit">ore</div>
+            </div>
+            <div class="stat-card">
+                <h3 id="sleep-title">Sonno Totale</h3>
+                <div class="value" id="total-sleep">-</div>
+                <div class="unit">ore</div>
+            </div>
+            <div class="stat-card">
+                <h3 id="target-title">Target Sonno</h3>
+                <div class="value" id="target-sleep">-</div>
+                <div class="unit">ore</div>
+            </div>
+            <div class="stat-card">
+                <h3>Giorni Tracciati</h3>
+                <div class="value" id="days-tracked">-</div>
+                <div class="unit">giorni</div>
+            </div>
+        </div>
+
+        <div class="card" id="missing-data-warning" style="display: none;">
+            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 8px;">
+                <strong>⚠️ Dati sonno mancanti</strong>
+                <p style="margin: 8px 0 0 0; color: #856404;" id="missing-data-message">
+                    Non ci sono ancora dati di sonno per oggi. Il calcolo del debito esclude la giornata odierna fino a quando non saranno disponibili i dati.
+                </p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="sync-section">
+                <button class="btn" id="sync-btn" onclick="syncData()">🔄 Sync Now</button>
+                <div class="last-sync" id="last-sync">Ultimo sync: -</div>
+                <div class="loading" id="loading">Sincronizzazione in corso...</div>
+                <div class="error" id="error"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="recent-data">
+                <h3>Dati Recenti</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Ore Sonno</th>
+                            <th>Target</th>
+                            <th>Debito</th>
+                        </tr>
+                    </thead>
+                    <tbody id="data-table-body">
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 20px; color: #999;">
+                                Caricamento dati...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Grafico Sleep Debt</h3>
+            <div class="chart-placeholder">
+                📊 Grafico placeholder - da implementare
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
+
