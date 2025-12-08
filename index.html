@@ -1,0 +1,314 @@
+﻿<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sleep Debt Tracker</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛏️</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- CSS Modulare -->
+    <link rel="stylesheet" href="/static/v2/styles/variables.css">
+    <link rel="stylesheet" href="/static/v2/styles/base.css">
+    <link rel="stylesheet" href="/static/v2/styles/components.css">
+    <link rel="stylesheet" href="/static/v2/styles/pages.css">
+</head>
+<body>
+    <!-- Homepage -->
+    <div id="homepage" class="homepage">
+        <div class="container">
+            <div class="header">
+                <div class="header-top">
+                    <div class="header-left">
+                        <h1 class="header-title">😴 Sleep Debt Tracker</h1>
+                        <p class="header-subtitle">Monitora il tuo debito di sonno</p>
+                    </div>
+                    <div class="header-right">
+                        <div class="header-date" id="header-date"></div>
+                        <button class="sync-btn" id="sync-btn" onclick="syncData()">🔄 Sync Now</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Debito Principale -->
+            <div class="card debt-main-card" id="debt-main-card">
+                <div class="debt-label">
+                    <span class="debt-label-icon">🛏️</span>
+                    <span>Sleep Debt</span>
+                </div>
+                <div class="debt-value" id="debt-value">-</div>
+            </div>
+
+            <!-- Mini Card Zona e Cambiamento -->
+            <div class="mini-cards">
+                <div class="mini-card" onclick="showZonePage()">
+                    <div class="mini-card-content">
+                        <div class="mini-card-label">Zona attuale</div>
+                        <div class="mini-card-value" id="current-zone">-</div>
+                    </div>
+                    <div class="mini-card-chevron">›</div>
+                </div>
+                <div class="mini-card">
+                    <div class="mini-card-content">
+                        <div class="mini-card-label">Cambiamento del debito odierno</div>
+                        <div class="mini-card-value" id="today-change">-</div>
+                    </div>
+                    <div class="mini-card-chevron">›</div>
+                </div>
+            </div>
+
+            <!-- Grafico -->
+            <div class="card chart-section">
+                <div class="chart-header" onclick="openChartFullscreen()">
+                    <div class="chart-title">
+                        <span id="chart-title-text">Andamento del debito di sonno</span>
+                        <span class="chart-title-chevron">›</span>
+                    </div>
+                    <span class="chart-toggle-icon" onclick="event.stopPropagation(); switchChartType()" style="font-size: 20px; cursor: pointer; opacity: 0.6;">📊</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="main-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Card Dormi Oggi e Obiettivo -->
+            <div class="info-cards">
+                <div class="info-card">
+                    <div class="info-card-content">
+                        <div class="info-card-label">Dormi oggi</div>
+                        <div class="info-card-value" id="today-sleep">-</div>
+                    </div>
+                    <div class="info-card-chevron">›</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-content">
+                        <div class="info-card-label">Obiettivo del sonno</div>
+                        <div class="info-card-value" id="target-sleep">-</div>
+                    </div>
+                    <div class="info-card-chevron">›</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagina Impostazioni -->
+    <div id="settings-page" class="settings-page">
+        <div class="container">
+            <div class="header">
+                <h1 class="header-title">Impostazioni</h1>
+            </div>
+
+            <div class="settings-list">
+                <div class="settings-row" onclick="showSettingsSubpage('window')">
+                    <span class="settings-row-label">Finestra mobile del debito</span>
+                    <div class="settings-row-value">
+                        <span id="settings-window-value">7 giorni</span>
+                        <span class="settings-row-chevron">›</span>
+                    </div>
+                </div>
+                <div class="settings-row" onclick="showSettingsSubpage('target')">
+                    <span class="settings-row-label">Obiettivo del sonno</span>
+                    <div class="settings-row-value">
+                        <span id="settings-target-value">8h 00m</span>
+                        <span class="settings-row-chevron">›</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sotto-pagina Finestra -->
+    <div id="settings-window-subpage" class="settings-subpage">
+        <div class="settings-subpage-header">
+            <button class="settings-subpage-back" onclick="closeSettingsSubpage()">←</button></button>
+            <h2 class="settings-subpage-title">Finestra mobile del debito</h2>
+        </div>
+        <div class="pill-selector">
+            <button class="pill-btn active" onclick="selectWindow(7)">7 giorni</button>
+            <button class="pill-btn" onclick="selectWindow(14)">14 giorni</button>
+            <button class="pill-btn" onclick="selectWindow(30)">30 giorni</button>
+        </div>
+    </div>
+
+    <!-- Sotto-pagina Obiettivo -->
+    <div id="settings-target-subpage" class="settings-subpage">
+        <div class="settings-subpage-header">
+            <button class="settings-subpage-back" onclick="closeSettingsSubpage()">←</button></button>
+            <h2 class="settings-subpage-title">Obiettivo del sonno</h2>
+        </div>
+        <div class="target-picker">
+            <div class="target-picker-value" id="target-picker-value">8h 00m</div>
+        </div>
+    </div>
+
+    <!-- Pagina Zone Debito -->
+    <div id="zone-page" class="zone-page">
+        <div class="zone-page-header">
+            <button class="zone-page-back" onclick="closeZonePage()">←</button></button>
+            <h2 class="zone-page-title">Zone del debito</h2>
+        </div>
+
+        <div class="zone-main-card">
+            <div class="zone-main-label">Debito di sonno attuale</div>
+            <div class="zone-main-value" id="zone-main-value">-</div>
+            <div class="zone-progress-bar" id="zone-progress-bar">
+                <div class="zone-progress-slider" id="zone-progress-slider"></div>
+            </div>
+            <div class="zone-progress-markers">
+                <div class="zone-progress-marker" style="left: 0%;">
+                    <div class="zone-progress-marker-dot" style="background: var(--color-yellow);"></div>
+                    <div class="zone-progress-marker-label">6 h</div>
+                </div>
+                <div class="zone-progress-marker" style="left: 50%;">
+                    <div class="zone-progress-marker-dot" style="background: var(--color-orange);"></div>
+                    <div class="zone-progress-marker-label">13 h e 30 min</div>
+                </div>
+                <div class="zone-progress-marker" style="left: 100%;">
+                    <div class="zone-progress-marker-dot" style="background: var(--color-red);"></div>
+                    <div class="zone-progress-marker-label">24 h e 23 min</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="zone-list">
+            <div class="zone-item expanded" onclick="toggleZoneItem(this)">
+                <div class="zone-item-header">
+                    <div class="zone-item-left">
+                        <div class="zone-item-icon optimal">✓</div>
+                        <div>
+                            <div class="zone-item-title">Ottimale</div>
+                            <div class="zone-item-range">(&lt; 6 h)</div>
+                        </div>
+                    </div>
+                    <span class="zone-item-chevron">›</span>
+                </div>
+                <div class="zone-item-content">
+                    Sei a un livello ottimale. Energia e concentrazione sono probabilmente al massimo.
+                </div>
+            </div>
+            <div class="zone-item" onclick="toggleZoneItem(this)">
+                <div class="zone-item-header">
+                    <div class="zone-item-left">
+                        <div class="zone-item-icon slight">!</div>
+                        <div>
+                            <div class="zone-item-title">Lieve mancanza</div>
+                            <div class="zone-item-range">(6 h - 13 h e 30 min)</div>
+                        </div>
+                    </div>
+                    <span class="zone-item-chevron">›</span>
+                </div>
+                <div class="zone-item-content">
+                    Hai una lieve mancanza di sonno. Considera di riposare un po' di più.
+                </div>
+            </div>
+            <div class="zone-item" onclick="toggleZoneItem(this)">
+                <div class="zone-item-header">
+                    <div class="zone-item-left">
+                        <div class="zone-item-icon large">⚠</div>
+                        <div>
+                            <div class="zone-item-title">Grande mancanza</div>
+                            <div class="zone-item-range">(13 h e 30 min - 24 h e 23 min)</div>
+                        </div>
+                    </div>
+                    <span class="zone-item-chevron">›</span>
+                </div>
+                <div class="zone-item-content">
+                    Hai una grande mancanza di sonno. È importante recuperare il riposo.
+                </div>
+            </div>
+            <div class="zone-item" onclick="toggleZoneItem(this)">
+                <div class="zone-item-header">
+                    <div class="zone-item-left">
+                        <div class="zone-item-icon critical">!</div>
+                        <div>
+                            <div class="zone-item-title">Bisogno di riposo</div>
+                            <div class="zone-item-range">(24 h e 23 min+)</div>
+                        </div>
+                    </div>
+                    <span class="zone-item-chevron">›</span>
+                </div>
+                <div class="zone-item-content">
+                    Hai un bisogno urgente di riposo. Cerca di dormire di più e recuperare il debito.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagina Grafico Fullscreen -->
+    <div id="chart-fullscreen" class="chart-fullscreen">
+        <div class="chart-fullscreen-header">
+            <button class="chart-fullscreen-back" onclick="closeChartFullscreen()">←</button></button>
+            <h2 class="chart-fullscreen-title">Tendenza al debito di sonno</h2>
+        </div>
+
+        <div class="chart-fullscreen-container">
+            <canvas id="fullscreen-chart"></canvas>
+        </div>
+
+        <div class="chart-fullscreen-bar-container">
+            <div class="chart-fullscreen-bar" id="chart-fullscreen-bar">
+                <div class="chart-fullscreen-bar-marker" style="left: 0%;">
+                    <div class="chart-fullscreen-bar-marker-dot"></div>
+                    <div class="chart-fullscreen-bar-marker-label">6 h</div>
+                </div>
+                <div class="chart-fullscreen-bar-marker" style="left: 50%;">
+                    <div class="chart-fullscreen-bar-marker-dot"></div>
+                    <div class="chart-fullscreen-bar-marker-label">13 h e 30 min</div>
+                </div>
+                <div class="chart-fullscreen-bar-marker" style="left: 100%;">
+                    <div class="chart-fullscreen-bar-marker-dot"></div>
+                    <div class="chart-fullscreen-bar-marker-label">24 h e 23 min</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-fullscreen-selector">
+            <button class="chart-fullscreen-selector-btn" onclick="selectDays(7)">7 Giorni</button>
+            <button class="chart-fullscreen-selector-btn active" onclick="selectDays(10)">10 Giorni</button>
+            <button class="chart-fullscreen-selector-btn" onclick="selectDays(14)">14 Giorni</button>
+            <button class="chart-fullscreen-selector-btn" onclick="selectDays(30)">30 Giorni</button>
+            <button class="chart-fullscreen-selector-btn" onclick="selectDays(90)">90 Giorni</button>
+            <span class="chart-fullscreen-selector-icon" onclick="event.stopPropagation(); switchChartType()">📊</span>
+        </div>
+    </div>
+
+    <!-- UI Precedente Toggle -->
+    <div class="ui-toggle-container">
+        <a href="/ui/v1" class="ui-toggle">
+            <span>UI Precedente</span>
+            <div class="ui-toggle-switch"></div>
+        </a>
+    </div>
+
+    <!-- Navbar Inferiore -->
+    <nav class="navbar-bottom">
+        <button class="navbar-item active" onclick="showHomepage()">
+            <span class="navbar-icon">🏠</span>
+            <span>Home</span>
+        </button>
+        <button class="navbar-item" onclick="showSettings()">
+            <span class="navbar-icon">⚙️</span>
+            <span>Impostazioni</span>
+        </button>
+    </nav>
+
+    <script src="/static/v2/app.js"></script>
+    <script src="/static/v2/charts.js"></script>
+    <script>
+        // Make functions available globally for onclick handlers
+        window.openChartFullscreen = openChartFullscreen;
+        window.closeChartFullscreen = closeChartFullscreen;
+        window.switchChartType = switchChartType;
+        window.selectWindow = selectWindow;
+        window.toggleWeight = toggleWeight;
+        window.saveSettings = saveSettings;
+        window.showHomepage = showHomepage;
+        window.showSettings = showSettings;
+        window.selectDays = selectDays;
+        window.switchChartType = switchChartType;
+    </script>
+</body>
+</html>
+
+
+
+

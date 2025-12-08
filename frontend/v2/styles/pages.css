@@ -142,6 +142,8 @@
     font-size: var(--font-size-xl);
     font-weight: 600;
     flex: 1;
+    text-align: center;
+    margin-right: 36px; /* Compensa il bottone back */
 }
 
 /* Selettore Pill Style (per sotto-pagina) */
@@ -170,21 +172,202 @@
     border-color: var(--color-green);
 }
 
-/* Picker Target Sonno (per sotto-pagina) */
-.target-picker {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 200px;
-    background: var(--color-gray-light);
-    border-radius: var(--radius-md);
-    margin: var(--spacing-md);
+/* Picker Target Sonno (per sotto-pagina) - Nuovo Design */
+.target-picker-container {
+    padding: var(--spacing-lg);
 }
 
-.target-picker-value {
-    font-size: var(--font-size-4xl);
+.target-picker-label-top {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-md);
+}
+
+.target-picker-main {
+    background: var(--color-background);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.target-picker-scrollable {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.target-picker-scroll-wrapper {
+    width: 90px;
+    height: 220px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-md);
+    background: var(--color-background);
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.target-picker-scroll-wrapper::-webkit-scrollbar {
+    display: none;
+    width: 0;
+}
+
+.target-picker-scroll-wrapper {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.target-picker-scroll-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 90px 0;
+    min-height: 100%;
+    justify-content: center;
+}
+
+.target-picker-item {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-base);
+    color: var(--color-text-secondary);
+    scroll-snap-align: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    min-width: 70px;
+    padding: 0 var(--spacing-md);
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    margin: 2px 0;
+}
+
+.target-picker-item:hover {
+    background: var(--color-gray-light);
+    transform: scale(1.05);
+}
+
+.target-picker-item.selected {
+    font-size: var(--font-size-xl);
     font-weight: 700;
-    color: var(--color-text-primary);
+    color: var(--color-primary);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+    transform: scale(1.1);
+}
+
+.target-picker-separator {
+    height: 1px;
+    background: var(--color-gray-medium);
+    margin: var(--spacing-md) 0;
+}
+
+.target-picker-selected {
+    text-align: center;
+    font-size: var(--font-size-base);
+    color: var(--color-text-secondary);
+    padding: var(--spacing-sm) 0;
+}
+
+.target-picker-info {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    padding: var(--spacing-md);
+    background: var(--color-gray-light);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-md);
+}
+
+/* Azioni sub-pagina impostazioni */
+.settings-subpage-actions {
+    padding: var(--spacing-md);
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-md);
+}
+
+.settings-save-btn {
+    background: var(--color-green);
+    color: var(--color-background);
+    border: none;
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 200px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.settings-save-btn:hover {
+    background: #4AB04A;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(90, 200, 90, 0.3);
+}
+
+.settings-save-btn:active {
+    transform: scale(0.98);
+}
+
+.settings-save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Messaggio impostazioni */
+.settings-message {
+    margin: 0 var(--spacing-md) var(--spacing-md);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    display: none;
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+    font-weight: 500;
+    text-align: center;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.settings-message.active {
+    display: block;
+}
+
+.settings-message.success {
+    background: rgba(90, 200, 90, 0.2);
+    color: #1e4a1e;
+    border: 2px solid rgba(90, 200, 90, 0.4);
+}
+
+.settings-message.error {
+    background: rgba(220, 53, 69, 0.2);
+    color: #721c24;
+    border: 2px solid rgba(220, 53, 69, 0.4);
 }
 
 /* Pagina Grafico Fullscreen */

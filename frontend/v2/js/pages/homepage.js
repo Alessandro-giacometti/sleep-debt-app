@@ -69,13 +69,23 @@ function updateUI(data) {
     
     // Aggiorna card "Target sonno giornaliero"
     const targetSleepEl = document.getElementById('target-sleep');
-    targetSleepEl.textContent = window.formatHoursOnly(data.target_sleep_hours);
+    // Usa formato completo con ore e minuti invece di formatHoursOnly
+    const { hours, minutes } = window.decimalToHoursMinutes(data.target_sleep_hours);
+    if (minutes === 0) {
+        targetSleepEl.textContent = `${hours}h`;
+    } else {
+        targetSleepEl.textContent = `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+    }
     targetSleepEl.style.color = 'var(--color-text-primary)';
     
-    // Aggiorna valore nelle impostazioni (solo ore, formato semplice)
+    // Aggiorna valore nelle impostazioni (formato completo con ore e minuti)
     const settingsTargetValueEl = document.getElementById('settings-target-value');
     if (settingsTargetValueEl) {
-        settingsTargetValueEl.textContent = window.formatHoursOnly(data.target_sleep_hours);
+        if (minutes === 0) {
+            settingsTargetValueEl.textContent = `${hours}h`;
+        } else {
+            settingsTargetValueEl.textContent = `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+        }
     }
     
     // Aggiorna titolo grafico con numero giorni
@@ -83,6 +93,48 @@ function updateUI(data) {
     if (chartTitleEl && data.recent_data) {
         const days = data.recent_data.length || 10;
         chartTitleEl.textContent = `Andamento del debito di sonno (${days} giorni)`;
+    }
+    
+    // Mostra/nascondi avviso nessun dato (solo se days_tracked === 0)
+    const noDataWarning = document.getElementById('no-data-warning');
+    if (noDataWarning) {
+        if (data.days_tracked === 0) {
+            noDataWarning.style.display = 'block';
+        } else {
+            noDataWarning.style.display = 'none';
+        }
+    }
+    
+    // Mostra/nascondi avviso dato oggi mancante
+    const missingTodayWarning = document.getElementById('missing-today-warning');
+    const missingTodayMessage = document.getElementById('missing-today-message');
+    if (missingTodayWarning && missingTodayMessage) {
+        if (data.has_today_data === false && data.days_tracked > 0) {
+            // Formatta data di oggi in italiano
+            const today = new Date();
+            const todayFormatted = today.toLocaleDateString('it-IT', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            missingTodayMessage.textContent = `Non ci sono ancora dati di sonno per oggi ${todayFormatted}. Il calcolo del debito esclude la giornata odierna fino a quando non saranno disponibili i dati.`;
+            missingTodayWarning.style.display = 'block';
+        } else {
+            missingTodayWarning.style.display = 'none';
+        }
+    }
+    
+    // Mostra/nascondi avviso dati insufficienti per finestra
+    const insufficientDataWarning = document.getElementById('insufficient-data-warning');
+    const insufficientDataMessage = document.getElementById('insufficient-data-message');
+    if (insufficientDataWarning && insufficientDataMessage) {
+        const windowDays = data.stats_window_days || window.currentWindow || 7;
+        if (data.days_tracked > 0 && data.days_tracked < windowDays) {
+            insufficientDataMessage.textContent = `Hai solo ${data.days_tracked} ${data.days_tracked === 1 ? 'giorno' : 'giorni'} di dati disponibili, ma la finestra selezionata è di ${windowDays} ${windowDays === 1 ? 'giorno' : 'giorni'}. Avvia la sincronizzazione per ottenere più dati.`;
+            insufficientDataWarning.style.display = 'block';
+        } else {
+            insufficientDataWarning.style.display = 'none';
+        }
     }
 }
 

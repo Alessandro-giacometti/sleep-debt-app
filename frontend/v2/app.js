@@ -13,15 +13,47 @@ window.currentChartType = currentChartType;
 window.currentWindow = currentWindow;
 
 // Inizializzazione
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     if (typeof updateHeaderDate === 'function') {
         updateHeaderDate();
     }
-    loadSleepStatus();
+    // Carica settings PRIMA di loadSleepStatus, perché il backend usa le settings
+    // per decidere se includere dati dummy o reali
+    await loadSettings();
+    await loadSleepStatus();
     if (typeof initNavigation === 'function') {
         initNavigation();
     }
 });
+
+/**
+ * Carica impostazioni utente dall'API
+ */
+async function loadSettings() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/settings`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const settings = await response.json();
+        
+        console.log('Settings loaded:', settings);
+        
+        // Aggiorna finestra giorni corrente
+        window.currentWindow = settings.stats_window_days || 7;
+        
+        // Aggiorna UI delle impostazioni
+        if (typeof updateSettingsUI === 'function') {
+            updateSettingsUI(settings);
+        }
+        
+        return settings;
+    } catch (error) {
+        console.error('Error loading settings:', error);
+        // Non mostriamo errore all'utente, usiamo valori di default
+        return null;
+    }
+}
 
 /**
  * Carica dati sleep status dall'API
@@ -33,6 +65,14 @@ async function loadSleepStatus() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
+        
+        console.log('Sleep status loaded:', {
+            current_debt: data.current_debt,
+            days_tracked: data.days_tracked,
+            total_sleep_hours: data.total_sleep_hours,
+            recent_data_count: data.recent_data ? data.recent_data.length : 0
+        });
+        
         sleepData = data;
         window.sleepData = data; // Esponi globalmente per altri moduli
         
@@ -199,3 +239,7 @@ function showSuccess(message) {
 // Esponi error handling globalmente
 window.showError = showError;
 window.showSuccess = showSuccess;
+
+// Esponi funzioni API globalmente per altri moduli
+window.loadSettings = loadSettings;
+window.loadSleepStatus = loadSleepStatus;

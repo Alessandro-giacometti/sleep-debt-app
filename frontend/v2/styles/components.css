@@ -357,3 +357,102 @@
     font-size: var(--font-size-xl);
 }
 
+/* Warning Nessun Dato */
+.no-data-warning {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 152, 0, 0.15) 100%);
+    border-left: 4px solid var(--color-yellow);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.no-data-warning-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.no-data-warning-icon {
+    font-size: var(--font-size-xl);
+    flex-shrink: 0;
+}
+
+.no-data-warning-text {
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+    line-height: 1.4;
+}
+
+/* Warning Dato Oggi Mancante */
+.missing-today-warning {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 152, 0, 0.15) 100%);
+    border-left: 4px solid var(--color-yellow);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.missing-today-warning-content {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+}
+
+.missing-today-warning-icon {
+    font-size: var(--font-size-xl);
+    flex-shrink: 0;
+}
+
+.missing-today-warning-text {
+    flex: 1;
+}
+
+.missing-today-warning-text strong {
+    display: block;
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.missing-today-warning-text p {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Warning Dati Insufficienti */
+.insufficient-data-warning {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 152, 0, 0.15) 100%);
+    border-left: 4px solid var(--color-yellow);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.insufficient-data-warning-content {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+}
+
+.insufficient-data-warning-icon {
+    font-size: var(--font-size-xl);
+    flex-shrink: 0;
+}
+
+.insufficient-data-warning-text {
+    flex: 1;
+}
+
+.insufficient-data-warning-text strong {
+    display: block;
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.insufficient-data-warning-text p {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: 1.4;
+}
+

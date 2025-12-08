@@ -41,7 +41,7 @@ function updateUI(data) {
     const windowDays = data.stats_window_days || 7;
     document.getElementById('debt-title').textContent = `Sleep Debt (${windowDays} giorni)`;
     document.getElementById('sleep-title').textContent = `Sonno Totale (${windowDays} giorni)`;
-    document.getElementById('target-title').textContent = `Target Sonno (${windowDays} giorni)`;
+    document.getElementById('target-title').textContent = `Target Sonno (giornaliero)`;
 
     // Show/hide missing data warning
     const missingDataWarning = document.getElementById('missing-data-warning');

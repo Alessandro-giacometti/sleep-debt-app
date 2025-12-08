@@ -387,11 +387,15 @@ def get_sleep_statistics(include_example: bool = False) -> Dict:
             "has_today_data": today_exists,
         }
 
+    # Get the daily target sleep hours (not the sum!)
+    from backend.config import get_target_sleep_hours
+    daily_target_hours = get_target_sleep_hours()
+    
     # Return total_debt as-is (negative values represent surplus that can offset future deficits)
     # The frontend will limit the display to 0 for user-facing presentation
     return {
         "total_sleep_hours": total_sleep_hours,
-        "target_sleep_hours": total_target_hours,
+        "target_sleep_hours": daily_target_hours,  # Daily target, not sum!
         "current_debt": total_debt,
         "days_tracked": days_tracked,
         "has_today_data": today_exists,
