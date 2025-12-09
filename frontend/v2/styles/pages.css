@@ -8,7 +8,7 @@
     left: 0;
     right: 0;
     bottom: 60px; /* Lascia spazio per navbar */
-    background: var(--color-background);
+    background: var(--color-gray-light);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     z-index: 100;
@@ -59,8 +59,8 @@
     cursor: pointer;
 }
 
-.settings-toggle-switch:hover {
-    background: var(--color-gray-dark);
+.settings-toggle-switch.active {
+    background: var(--color-green);
 }
 
 .settings-toggle-switch-slider {
@@ -75,9 +75,8 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.settings-toggle-switch:hover .settings-toggle-switch-slider {
+.settings-toggle-switch.active .settings-toggle-switch-slider {
     transform: translateX(20px);
-    background: var(--color-green);
 }
 
 .settings-row-label {
@@ -652,7 +651,7 @@
     left: 0;
     right: 0;
     bottom: 60px; /* Lascia spazio per navbar */
-    background: var(--color-background);
+    background: var(--color-gray-light);
     z-index: 2000;
     overflow-y: auto;
 }
@@ -903,7 +902,7 @@
     left: 0;
     right: 0;
     bottom: 60px; /* Lascia spazio per navbar */
-    background: var(--color-background);
+    background: var(--color-gray-light);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     z-index: 100;
@@ -1121,7 +1120,7 @@
     left: 0;
     right: 0;
     bottom: 60px; /* Lascia spazio per navbar */
-    background: var(--color-background);
+    background: var(--color-gray-light);
     z-index: 2000;
     overflow-y: auto;
 }
@@ -1354,7 +1353,7 @@
     left: 0;
     right: 0;
     bottom: 60px; /* Lascia spazio per navbar */
-    background: var(--color-background);
+    background: var(--color-gray-light);
     z-index: 2000;
     overflow-y: auto;
 }

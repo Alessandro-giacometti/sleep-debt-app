@@ -1,5 +1,8 @@
 // Sleep Debt Tracker v2 - Settings Page Logic
 
+// Variabile globale per tracciare lo stato del toggle dummy data
+window.currentDummyData = false;
+
 /**
  * Aggiorna UI delle impostazioni con i valori correnti
  */
@@ -18,6 +21,18 @@ function updateSettingsUI(settings) {
             targetValueEl.textContent = `${hours}h`;
         } else {
             targetValueEl.textContent = `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+        }
+    }
+    
+    // Aggiorna toggle dummy data
+    const useDummyData = settings.use_dummy_data || false;
+    window.currentDummyData = useDummyData;
+    const dummyDataToggle = document.getElementById('dummy-data-toggle');
+    if (dummyDataToggle) {
+        if (useDummyData) {
+            dummyDataToggle.classList.add('active');
+        } else {
+            dummyDataToggle.classList.remove('active');
         }
     }
     
@@ -86,6 +101,25 @@ function toggleWeight() {
         toggleContainer.classList.toggle('active');
         // TODO: Implementare logica di salvataggio quando sarà implementata la funzionalità
         console.log('Weight toggle:', toggleContainer.classList.contains('active') ? 'on' : 'off');
+    }
+}
+
+/**
+ * Toggle dati dummy
+ */
+function toggleDummyData(event) {
+    // Previeni la propagazione dell'evento
+    if (event) {
+        event.stopPropagation();
+    }
+    
+    const toggle = document.getElementById('dummy-data-toggle');
+    if (toggle) {
+        toggle.classList.toggle('active');
+        window.currentDummyData = toggle.classList.contains('active');
+        
+        // Salva immediatamente le impostazioni
+        saveSettings();
     }
 }
 
@@ -554,7 +588,7 @@ async function saveSettings() {
             body: JSON.stringify({
                 target_sleep_hours: targetHours,
                 stats_window_days: statsWindow,
-                use_dummy_data: false // V2 non ha ancora toggle per questo
+                use_dummy_data: window.currentDummyData || false
             })
         });
         
@@ -785,6 +819,7 @@ function closeSettingsSubpage() {
 window.updateSettingsUI = updateSettingsUI;
 window.selectWindow = selectWindow;
 window.toggleWeight = toggleWeight;
+window.toggleDummyData = toggleDummyData;
 window.saveSettings = saveSettings;
 window.showSettingsSubpage = showSettingsSubpage;
 window.closeSettingsSubpage = closeSettingsSubpage;
