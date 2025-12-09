@@ -7,24 +7,7 @@ let currentDailySleepDays = 10; // Default a 10 giorni
  * Mostra pagina Daily Sleep
  */
 function showDailySleepPage() {
-    // Nascondi homepage
-    document.getElementById('homepage').classList.add('hidden');
-    // Mostra pagina daily sleep
-    const dailySleepPage = document.getElementById('daily-sleep-page');
-    dailySleepPage.classList.remove('hidden');
-    dailySleepPage.classList.add('active');
-    
-    // Scrolla in alto per evitare scroll automatico verso il basso
-    requestAnimationFrame(() => {
-        if (dailySleepPage) {
-            dailySleepPage.scrollTop = 0;
-        }
-        setTimeout(() => {
-            if (dailySleepPage) {
-                dailySleepPage.scrollTop = 0;
-            }
-        }, 50);
-    });
+    navigateTo('daily-sleep-page');
     
     // Inizializza con la finestra temporale corrente o default
     if (!currentDailySleepDays) {
@@ -58,13 +41,10 @@ function showDailySleepPage() {
 }
 
 /**
- * Chiudi pagina Daily Sleep
+ * Chiudi pagina Daily Sleep (torna alla homepage)
  */
 function closeDailySleepPage() {
-    const dailySleepPage = document.getElementById('daily-sleep-page');
-    dailySleepPage.classList.remove('active');
-    // Mostra homepage
-    document.getElementById('homepage').classList.remove('hidden');
+    navigateTo('homepage');
 }
 
 /**
@@ -156,35 +136,28 @@ function updateDailySleepChart(data, targetHours = 8) {
     const sortedData = [...data].sort((a, b) => {
         const dateA = new Date(a.date);
         const dateB = new Date(b.date);
-        return dateA - dateB; // Ordine crescente (più vecchia prima)
+        return dateA - dateB;
     });
     
     // Prepara dati per il grafico
     const labels = sortedData.map(item => {
         const date = new Date(item.date);
-        // Formato più compatto: "Lun 15" invece di "15/12"
         const dayName = date.toLocaleDateString('it-IT', { weekday: 'short' });
         const day = date.toLocaleDateString('it-IT', { day: '2-digit' });
         return `${dayName} ${day}`;
     });
     
     const sleepHours = sortedData.map(item => item.sleep_hours || 0);
-    // Usa il target passato come parametro o default 8
     const target = targetHours || 8;
     
-    // Colori più saturi e vivaci (meno pastello) stile iPhone moderno
-    // Verde iOS più saturo: rgba(52, 199, 89, 0.7) - più vivace
-    // Rosso iOS più saturo: rgba(255, 59, 48, 0.7) - più vivace
     const backgroundColors = sleepHours.map(hours => {
         return hours >= target ? 'rgba(52, 199, 89, 0.7)' : 'rgba(255, 59, 48, 0.7)';
     });
     
-    // Colori bordi più scuri e saturi
     const borderColors = sleepHours.map(hours => {
         return hours >= target ? 'rgba(52, 199, 89, 0.9)' : 'rgba(255, 59, 48, 0.9)';
     });
     
-    // Crea array di target per la linea tratteggiata (stesso valore per tutti i punti)
     const targetLineData = new Array(sleepHours.length).fill(target);
     
     dailySleepChart = new Chart(ctx, {
@@ -249,7 +222,6 @@ function updateDailySleepChart(data, targetHours = 8) {
                         },
                         label: function(context) {
                             if (context.datasetIndex === 0) {
-                                // Tooltip per le barre (ore dormite)
                                 const hours = context.parsed.y || 0;
                                 const formatted = window.formatHoursMinutes ? window.formatHoursMinutes(hours) : `${hours}h`;
                                 const diff = hours - target;
@@ -262,7 +234,6 @@ function updateDailySleepChart(data, targetHours = 8) {
                                     `Differenza: ${diffSign}${diffFormatted}`
                                 ];
                             } else {
-                                // Tooltip per la linea target
                                 const targetFormatted = window.formatHoursMinutes ? window.formatHoursMinutes(target) : `${target}h`;
                                 return `Target: ${targetFormatted}`;
                             }
@@ -300,8 +271,7 @@ function updateDailySleepChart(data, targetHours = 8) {
                             size: 11,
                             family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
                         },
-                        color: 'rgba(0, 0, 0, 0.6)',
-                        padding: 8
+                        color: 'rgba(0, 0, 0, 0.6)'
                     }
                 }
             }
@@ -312,6 +282,5 @@ function updateDailySleepChart(data, targetHours = 8) {
 // Esponi funzioni globalmente
 window.showDailySleepPage = showDailySleepPage;
 window.closeDailySleepPage = closeDailySleepPage;
-window.loadDailySleepData = loadDailySleepData;
 window.selectDailySleepDays = selectDailySleepDays;
-
+window.currentDailySleepDays = currentDailySleepDays;

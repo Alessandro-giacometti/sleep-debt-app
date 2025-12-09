@@ -4,45 +4,24 @@
  * Mostra pagina Zone
  */
 function showZonePage() {
-    // Nascondi homepage
-    document.getElementById('homepage').classList.add('hidden');
-    // Mostra pagina zone
-    const zonePage = document.getElementById('zone-page');
-    zonePage.classList.remove('hidden');
-    zonePage.classList.add('active');
-    
-    // Scrolla in alto per evitare scroll automatico verso il basso
-    requestAnimationFrame(() => {
-        if (zonePage) {
-            zonePage.scrollTop = 0;
-        }
-        setTimeout(() => {
-            if (zonePage) {
-                zonePage.scrollTop = 0;
-            }
-        }, 50);
-    });
+    navigateTo('zone-page');
     
     // Aggiorna valore debito nella pagina zone
     if (window.sleepData) {
         const debtHours = window.sleepData.current_debt || 0;
         const debtValueEl = document.getElementById('zone-main-value');
         if (debtValueEl) {
-            debtValueEl.textContent = window.formatDebt(debtHours);
-            // Aggiorna posizione slider
+            debtValueEl.textContent = window.formatDebt ? window.formatDebt(debtHours) : `${debtHours}h`;
             updateZoneProgress(debtHours);
         }
     }
 }
 
 /**
- * Chiudi pagina Zone
+ * Chiudi pagina Zone (torna alla homepage)
  */
 function closeZonePage() {
-    const zonePage = document.getElementById('zone-page');
-    zonePage.classList.remove('active');
-    // Mostra homepage
-    document.getElementById('homepage').classList.remove('hidden');
+    navigateTo('homepage');
 }
 
 /**
@@ -70,4 +49,3 @@ window.showZonePage = showZonePage;
 window.closeZonePage = closeZonePage;
 window.updateZoneProgress = updateZoneProgress;
 window.toggleZoneItem = toggleZoneItem;
-

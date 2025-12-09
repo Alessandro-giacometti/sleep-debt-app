@@ -3,15 +3,19 @@
 /* Pagina Impostazioni */
 .settings-page {
     display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 60px; /* Lascia spazio per navbar */
     background: var(--color-gray-light);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    z-index: 100;
+    min-height: calc(100vh - 60px);
+    padding-bottom: var(--spacing-md);
+}
+
+/* Nascondi scrollbar ma mantieni scrolling */
+.settings-page::-webkit-scrollbar {
+    display: none;
+}
+
+.settings-page {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
 }
 
 .settings-page.active {
@@ -109,6 +113,17 @@
     background: var(--color-gray-light);
     z-index: 3000;
     overflow-y: auto;
+    padding-bottom: 80px; /* Spazio extra per messaggio e navbar */
+}
+
+/* Nascondi scrollbar ma mantieni scrolling */
+.settings-subpage::-webkit-scrollbar {
+    display: none;
+}
+
+.settings-subpage {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
 }
 
 .settings-subpage.active {
@@ -453,7 +468,7 @@
 
 /* Messaggio impostazioni */
 .settings-message {
-    margin: 0 var(--spacing-md) var(--spacing-md);
+    margin: 0 var(--spacing-md) var(--spacing-xl);
     padding: var(--spacing-md);
     border-radius: var(--radius-md);
     display: none;
@@ -462,6 +477,7 @@
     font-weight: 500;
     text-align: center;
     animation: fadeIn 0.3s ease-in;
+    margin-bottom: calc(var(--spacing-xl) + 60px); /* Spazio extra per navbar */
 }
 
 @keyframes fadeIn {
@@ -494,18 +510,9 @@
 /* Pagina Grafico Fullscreen */
 .chart-fullscreen {
     display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
     background: var(--color-gray-light);
-    z-index: 2000;
-    overflow-y: auto;
-}
-
-.chart-fullscreen.active {
-    display: block;
+    min-height: calc(100vh - 60px);
+    padding-bottom: var(--spacing-md);
 }
 
 .chart-fullscreen-header {
@@ -646,18 +653,9 @@
 /* Pagina Zone Debito */
 .zone-page {
     display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 60px; /* Lascia spazio per navbar */
     background: var(--color-gray-light);
-    z-index: 2000;
-    overflow-y: auto;
-}
-
-.zone-page.active {
-    display: block;
+    min-height: calc(100vh - 60px);
+    padding-bottom: var(--spacing-md);
 }
 
 .zone-page-header {
@@ -896,20 +894,10 @@
 
 /* Homepage */
 .homepage {
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 60px; /* Lascia spazio per navbar */
-    background: var(--color-gray-light);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    z-index: 100;
-}
-
-.homepage.hidden {
     display: none;
+    background: var(--color-gray-light);
+    min-height: calc(100vh - 60px);
+    padding-bottom: var(--spacing-md);
 }
 
 /* Modal Conferma Eliminazione Dati */
@@ -1115,18 +1103,9 @@
 /* Pagina Daily Change */
 .daily-change-page {
     display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 60px; /* Lascia spazio per navbar */
     background: var(--color-gray-light);
-    z-index: 2000;
-    overflow-y: auto;
-}
-
-.daily-change-page.active {
-    display: block;
+    min-height: calc(100vh - 60px);
+    padding-bottom: var(--spacing-md);
 }
 
 .daily-change-page-header {
@@ -1135,9 +1114,6 @@
     padding: var(--spacing-md);
     background: var(--color-background);
     border-bottom: 1px solid var(--color-gray-medium);
-    position: sticky;
-    top: 0;
-    z-index: 10;
 }
 
 .daily-change-page-back {
@@ -1346,20 +1322,12 @@
 }
 
 /* Pagina Daily Sleep */
+/* Pagina Daily Sleep */
 .daily-sleep-page {
     display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 60px; /* Lascia spazio per navbar */
     background: var(--color-gray-light);
-    z-index: 2000;
-    overflow-y: auto;
-}
-
-.daily-sleep-page.active {
-    display: block;
+    min-height: calc(100vh - 60px);
+    padding-bottom: var(--spacing-md);
 }
 
 .daily-sleep-page-header {
@@ -1368,9 +1336,6 @@
     padding: var(--spacing-md);
     background: var(--color-background);
     border-bottom: 1px solid var(--color-gray-medium);
-    position: sticky;
-    top: 0;
-    z-index: 10;
 }
 
 .daily-sleep-page-back {

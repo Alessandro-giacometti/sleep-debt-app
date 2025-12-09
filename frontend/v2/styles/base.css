@@ -5,6 +5,16 @@
     box-sizing: border-box;
 }
 
+/* Nascondi scrollbar su tutti gli elementi scrollabili */
+*::-webkit-scrollbar {
+    display: none;
+}
+
+* {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background: var(--color-gray-light);
@@ -12,12 +22,19 @@ body {
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Rimuoviamo padding-bottom e min-height perché le pagine sono ora position: fixed */
     overflow-x: hidden; /* Previeni scroll orizzontale */
-    overflow-y: hidden; /* Previeni scroll verticale sul body - lo scroll avviene nelle pagine fixed */
-    height: 100vh; /* Altezza fissa per evitare scrollbar */
-    position: fixed; /* Fissa il body per evitare scroll indesiderato */
-    width: 100%;
+    min-height: 100vh;
+    padding-bottom: 60px; /* Spazio per navbar */
+}
+
+/* Nascondi scrollbar ma mantieni scrolling */
+body::-webkit-scrollbar {
+    display: none;
+}
+
+body {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
 }
 
 /* Container principale */

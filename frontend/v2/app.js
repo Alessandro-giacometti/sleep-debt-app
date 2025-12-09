@@ -14,13 +14,20 @@ window.currentWindow = currentWindow;
 
 // Inizializzazione
 document.addEventListener('DOMContentLoaded', async () => {
+    // Previeni il ripristino automatico dello scroll da parte del browser
+    if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+    }
+    
     if (typeof updateHeaderDate === 'function') {
         updateHeaderDate();
     }
-    // Carica settings PRIMA di loadSleepStatus, perché il backend usa le settings
-    // per decidere se includere dati dummy o reali
+    
+    // Carica settings PRIMA di loadSleepStatus
     await loadSettings();
     await loadSleepStatus();
+    
+    // Inizializza navigazione - mostra homepage
     if (typeof initNavigation === 'function') {
         initNavigation();
     }

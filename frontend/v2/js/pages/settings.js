@@ -712,23 +712,41 @@ function showSettingsMessage(message, type) {
     const targetSubpage = document.getElementById('settings-target-subpage');
     
     let messageEl = null;
+    let subpageEl = null;
     if (windowSubpage && windowSubpage.classList.contains('active')) {
         messageEl = document.getElementById('settings-message-window');
+        subpageEl = windowSubpage;
     } else if (targetSubpage && targetSubpage.classList.contains('active')) {
         messageEl = document.getElementById('settings-message-target');
+        subpageEl = targetSubpage;
     }
     
     // Se non trovato nella sub-pagina attiva, prova a cercare in entrambe (per cleanup)
     if (!messageEl) {
         messageEl = document.getElementById('settings-message-window') || document.getElementById('settings-message-target');
+        if (!subpageEl) {
+            subpageEl = windowSubpage || targetSubpage;
+        }
     }
     
     if (messageEl) {
         if (message) {
             messageEl.textContent = message;
             messageEl.className = `settings-message ${type} active`;
-            // Scrolla il messaggio in vista se necessario
-            messageEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            // Scrolla la sub-pagina per mostrare il messaggio completamente
+            // La sub-pagina è position: fixed con scroll interno, quindi scrolliamo l'elemento sub-pagina
+            if (subpageEl) {
+                setTimeout(() => {
+                    // Calcola la posizione del messaggio rispetto alla sub-pagina
+                    const messageRect = messageEl.getBoundingClientRect();
+                    const subpageRect = subpageEl.getBoundingClientRect();
+                    const scrollPosition = subpageEl.scrollTop + (messageRect.top - subpageRect.top) - (subpageEl.clientHeight - messageRect.height - 80);
+                    subpageEl.scrollTo({
+                        top: Math.max(0, scrollPosition),
+                        behavior: 'smooth'
+                    });
+                }, 100);
+            }
         } else {
             // Se message è vuoto, nascondi
             messageEl.classList.remove('active');
@@ -737,10 +755,25 @@ function showSettingsMessage(message, type) {
     // Rimuovi il console.warn - non è un errore critico se l'elemento non esiste
 }
 
+// Traccia la pagina da cui si è arrivati per le sub-pagine
+let previousPageBeforeSubpage = null;
+
 /**
  * Mostra sotto-pagina impostazioni
  */
 function showSettingsSubpage(type) {
+    // Salva la pagina corrente come pagina precedente SOLO se non è già stata impostata
+    // (ad esempio da openTargetSettings())
+    if (previousPageBeforeSubpage === null) {
+        // Usa il nuovo sistema di navigazione per verificare la pagina corrente
+        const currentPage = window.getCurrentPage ? window.getCurrentPage() : 'settings-page';
+        if (currentPage === 'homepage') {
+            previousPageBeforeSubpage = 'homepage';
+        } else {
+            previousPageBeforeSubpage = 'settings';
+        }
+    }
+    
     // Nascondi messaggi precedenti
     const windowMessage = document.getElementById('settings-message-window');
     const targetMessage = document.getElementById('settings-message-target');
@@ -813,6 +846,21 @@ function closeSettingsSubpage() {
         saveBtnTarget.disabled = false;
         saveBtnTarget.textContent = 'Salva';
     }
+    
+    // Torna alla pagina da cui si è arrivati
+    if (previousPageBeforeSubpage === 'homepage') {
+        if (typeof showHomepage === 'function') {
+            showHomepage();
+        }
+    } else {
+        // Default: torna alle impostazioni
+        if (typeof showSettings === 'function') {
+            showSettings();
+        }
+    }
+    
+    // Reset della variabile
+    previousPageBeforeSubpage = null;
 }
 
 // Esponi funzioni globalmente
@@ -831,7 +879,16 @@ window.hoursMinutesToDecimal = hoursMinutesToDecimal;
  * Apri pagina target settings dalla homepage
  */
 function openTargetSettings() {
-    // Mostra pagina impostazioni
+    // Salva che stiamo venendo dalla homepage PRIMA di cambiare pagina
+    // Usa il nuovo sistema di navigazione per verificare la pagina corrente
+    const currentPage = window.getCurrentPage ? window.getCurrentPage() : 'settings-page';
+    if (currentPage === 'homepage') {
+        previousPageBeforeSubpage = 'homepage';
+    } else {
+        previousPageBeforeSubpage = 'settings';
+    }
+    
+    // Mostra pagina impostazioni (necessaria per mostrare la sub-pagina)
     if (typeof showSettings === 'function') {
         showSettings();
     }
