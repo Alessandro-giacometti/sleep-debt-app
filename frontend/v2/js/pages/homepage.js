@@ -43,7 +43,7 @@ function updateUI(data) {
     // Aggiorna zona attuale
     const currentZoneEl = document.getElementById('current-zone');
     currentZoneEl.textContent = debtInfo.zone;
-    currentZoneEl.style.color = debtInfo.color;
+    // Il colore è ora gestito dalle classi CSS del badge/pill
     
     // Aggiorna anche la mini card "Sleep Debt Zone" con la classe del livello per migliorare visibilità
     const zoneMiniCard = document.querySelector('.mini-card[onclick="showZonePage()"]');
@@ -56,6 +56,7 @@ function updateUI(data) {
     
     // Aggiorna cambiamento odierno (mostra la differenza del giorno, cioè il debt giornaliero di oggi)
     const todayChangeEl = document.getElementById('today-change');
+    const dailyChangeCard = document.querySelector('.info-card[onclick="showDailyChangePage()"]');
     if (data.recent_data && data.recent_data.length > 0) {
         const today = data.recent_data[0];
         const debt = today.debt || 0;
@@ -66,31 +67,51 @@ function updateUI(data) {
         
         todayChangeEl.textContent = debt !== 0 ? `${debtSign}${debtFormatted}` : '0h';
         
-        // Colore in base al segno
-        if (debt > 0) {
-            todayChangeEl.style.color = 'var(--color-red)'; // Deficit (positivo)
-        } else if (debt < 0) {
-            todayChangeEl.style.color = 'var(--color-green)'; // Surplus (negativo)
-        } else {
-            todayChangeEl.style.color = 'var(--color-text-secondary)'; // Neutro
+        // Colore in base al segno e classe per bordo card
+        if (dailyChangeCard) {
+            dailyChangeCard.classList.remove('card-status-positive', 'card-status-negative', 'card-status-neutral');
+            if (debt > 0) {
+                todayChangeEl.style.color = 'var(--color-red)'; // Deficit (positivo)
+                dailyChangeCard.classList.add('card-status-positive');
+            } else if (debt < 0) {
+                todayChangeEl.style.color = 'var(--color-green)'; // Surplus (negativo)
+                dailyChangeCard.classList.add('card-status-negative');
+            } else {
+                todayChangeEl.style.color = 'var(--color-text-secondary)'; // Neutro
+                dailyChangeCard.classList.add('card-status-neutral');
+            }
         }
     } else {
         todayChangeEl.textContent = '-';
         todayChangeEl.style.color = '';
+        if (dailyChangeCard) {
+            dailyChangeCard.classList.remove('card-status-positive', 'card-status-negative', 'card-status-neutral');
+        }
     }
     
     // Aggiorna card "Ore dormite oggi" (formato compatto con "m" invece di "min")
     const todaySleepEl = document.getElementById('today-sleep');
+    const todaySleepCard = document.querySelector('.info-card[onclick="showDailySleepPage()"]');
     if (data.recent_data && data.recent_data.length > 0 && data.recent_data[0]) {
         const sleepHours = data.recent_data[0].sleep_hours;
         const targetHours = data.target_sleep_hours || 8;
         // Usa formatHoursMinutes per formato compatto (es. "8h 30m")
         todaySleepEl.textContent = window.formatHoursMinutes ? window.formatHoursMinutes(sleepHours) : window.formatDebt(sleepHours);
         // Verde se >= target, rosso se < target
-        todaySleepEl.style.color = sleepHours >= targetHours ? 'var(--color-green)' : 'var(--color-red)';
+        const isGood = sleepHours >= targetHours;
+        todaySleepEl.style.color = isGood ? 'var(--color-green)' : 'var(--color-red)';
+        
+        // Aggiungi classe per bordo card
+        if (todaySleepCard) {
+            todaySleepCard.classList.remove('card-status-good', 'card-status-bad');
+            todaySleepCard.classList.add(isGood ? 'card-status-good' : 'card-status-bad');
+        }
     } else {
         todaySleepEl.textContent = '-';
         todaySleepEl.style.color = 'var(--color-text-primary)';
+        if (todaySleepCard) {
+            todaySleepCard.classList.remove('card-status-good', 'card-status-bad');
+        }
     }
     
     // Aggiorna card "Target sonno giornaliero"
