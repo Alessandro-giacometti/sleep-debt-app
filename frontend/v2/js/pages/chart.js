@@ -3,10 +3,35 @@
 /**
  * Gestione grafico fullscreen
  */
-function openChartFullscreen() {
+async function openChartFullscreen() {
     document.getElementById('chart-fullscreen').classList.add('active');
+    // Inizializza con la finestra temporale corrente o default
+    if (!window.currentChartDays) {
+        window.currentChartDays = window.sleepData?.stats_window_days || 10;
+    }
+    // Aggiorna UI selettore giorni - usa sempre il valore corretto
+    const defaultDays = window.sleepData?.stats_window_days || 10;
+    const selectedDays = window.currentChartDays || defaultDays;
+    window.currentChartDays = selectedDays; // Assicura che sia sempre settato
+    
+    document.querySelectorAll('.chart-fullscreen-selector-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Attiva il bottone corrispondente ai giorni selezionati
+    const btnId = `chart-btn-${selectedDays}`;
+    const selectedBtn = document.getElementById(btnId);
+    if (selectedBtn) {
+        selectedBtn.classList.add('active');
+    } else {
+        // Fallback: attiva il bottone 10 giorni se non trovato
+        const defaultBtn = document.getElementById('chart-btn-10');
+        if (defaultBtn) {
+            defaultBtn.classList.add('active');
+        }
+    }
     if (typeof initFullscreenChart === 'function') {
-        initFullscreenChart();
+        await initFullscreenChart();
     }
 }
 
@@ -15,16 +40,24 @@ function closeChartFullscreen() {
 }
 
 /**
- * Selettore giorni nel grafico fullscreen (solo UI)
+ * Selettore giorni nel grafico fullscreen
  */
-function selectDays(days) {
+async function selectDays(days) {
+    // Aggiorna UI
     document.querySelectorAll('.chart-fullscreen-selector-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     if (event && event.target) {
         event.target.classList.add('active');
     }
-    // TODO: Aggiornare grafico quando backend sarà pronto
+    
+    // Salva giorni selezionati
+    window.currentChartDays = days;
+    
+    // Carica dati per il numero di giorni selezionato
+    if (typeof loadChartDataForDays === 'function') {
+        await loadChartDataForDays(days);
+    }
 }
 
 /**

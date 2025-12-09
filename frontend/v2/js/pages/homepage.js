@@ -31,10 +31,28 @@ function updateUI(data) {
     debtValueEl.textContent = window.formatDebt(debtHours);
     debtValueEl.className = `debt-value ${debtInfo.class}`;
     
+    // Aggiorna classe della card principale per styling basato sul livello del debito
+    const debtMainCard = document.getElementById('debt-main-card');
+    if (debtMainCard) {
+        // Rimuovi tutte le classi di livello
+        debtMainCard.classList.remove('debt-level-optimal', 'debt-level-slight', 'debt-level-large', 'debt-level-critical');
+        // Aggiungi la classe corrispondente
+        debtMainCard.classList.add(`debt-level-${debtInfo.class}`);
+    }
+    
     // Aggiorna zona attuale
     const currentZoneEl = document.getElementById('current-zone');
     currentZoneEl.textContent = debtInfo.zone;
     currentZoneEl.style.color = debtInfo.color;
+    
+    // Aggiorna anche la mini card "Sleep Debt Zone" con la classe del livello per migliorare visibilità
+    const zoneMiniCard = document.querySelector('.mini-card[onclick="showZonePage()"]');
+    if (zoneMiniCard) {
+        // Rimuovi tutte le classi di livello
+        zoneMiniCard.classList.remove('debt-level-optimal', 'debt-level-slight', 'debt-level-large', 'debt-level-critical');
+        // Aggiungi la classe corrispondente
+        zoneMiniCard.classList.add(`debt-level-${debtInfo.class}`);
+    }
     
     // Aggiorna cambiamento odierno (calcolo semplificato)
     const todayChangeEl = document.getElementById('today-change');

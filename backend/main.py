@@ -172,20 +172,68 @@ async def get_sleep_status():
     )
 
 
+@app.get("/api/sleep/chart-data")
+async def get_chart_data(days: int = None):
+    """Get sleep data for chart with customizable number of days.
+    
+    Args:
+        days: Number of days to retrieve (defaults to stats_window_days from settings)
+    """
+    from backend.config import get_user_settings_from_db, get_stats_window_days
+    from db.database import read_sleep_data, count_available_days_in_window, count_total_real_data_days
+    
+    # Get use_dummy_data setting
+    settings = get_user_settings_from_db()
+    use_dummy_data = settings.get("use_dummy_data", False) if settings else False
+    
+    # Use provided days or default to stats_window_days
+    if days is None:
+        days = get_stats_window_days()
+    
+    # Get data for the requested number of days
+    chart_data = read_sleep_data(limit=days, include_example=use_dummy_data)
+    
+    # Check how many days are actually available
+    available_days = count_available_days_in_window(days, include_example=use_dummy_data)
+    total_real_data_days = count_total_real_data_days()
+    
+    return {
+        "data": [SleepData(**item) for item in chart_data],
+        "requested_days": days,
+        "available_days": available_days,
+        "total_real_data_days": total_real_data_days,
+        "has_sufficient_data": available_days >= days
+    }
+
+
 @app.post("/api/sleep/sync", response_model=SyncResponse)
-async def sync_sleep():
+async def sync_sleep(days: int = None):
     """Trigger sleep data synchronization from Garmin.
     
-    Always syncs last 35 days to ensure comprehensive data coverage.
+    Args:
+        days: Number of days to sync (defaults to 35 for comprehensive coverage).
+              This represents the number of days with valid sleep data to retrieve.
+              If today has no data, it will be excluded and an extra day will be synced.
     """
     from backend.config import get_user_settings_from_db
+    from db.database import get_sleep_statistics
     try:
         # Get use_dummy_data setting from database
         settings = get_user_settings_from_db()
         use_dummy_data = settings.get("use_dummy_data", False) if settings else False
         
-        # Always sync 35 days to refresh historical data
-        result = sync_sleep_data(days=35, use_dummy_data=use_dummy_data)
+        # Use provided days or default to 35 days for comprehensive coverage
+        requested_days = days if days is not None else 35
+        
+        # Check if today has data - if not, we need to sync one extra day to get the requested number of valid days
+        stats = get_sleep_statistics(include_example=use_dummy_data)
+        today_has_data = stats.get("has_today_data", False)
+        
+        # If today has no data, sync one extra day to compensate
+        # This ensures we get the requested number of days with valid sleep data
+        days_to_sync = requested_days if today_has_data else (requested_days + 1)
+        
+        result = sync_sleep_data(days=days_to_sync, use_dummy_data=use_dummy_data)
         
         # Save the actual sync timestamp to database
         if result.get("success") and "last_sync" in result:

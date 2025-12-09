@@ -525,7 +525,7 @@ async function saveSettings() {
         targetHours = window.sleepData.target_sleep_hours;
     }
     if (statsWindow === null) {
-        statsWindow = window.currentWindow || 7;
+        statsWindow = window.currentWindow || 10;
     }
     
     // Mostra loading - trova il bottone nella sub-pagina attiva
@@ -813,4 +813,89 @@ window.selectTargetHour = selectTargetHour;
 window.selectTargetMinute = selectTargetMinute;
 window.updateTargetPickerSelected = updateTargetPickerSelected;
 window.openTargetSettings = openTargetSettings;
+
+/**
+ * Mostra modal di conferma per eliminare tutti i dati
+ */
+function confirmDeleteAllData() {
+    const modal = document.getElementById('delete-confirm-modal');
+    if (modal) {
+        modal.classList.add('active');
+    }
+}
+
+/**
+ * Annulla eliminazione e chiudi modal
+ */
+function cancelDeleteAllData() {
+    const modal = document.getElementById('delete-confirm-modal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+/**
+ * Elimina tutti i dati di sonno dopo conferma
+ */
+async function deleteAllData() {
+    const modal = document.getElementById('delete-confirm-modal');
+    const confirmBtn = document.getElementById('confirm-delete-btn');
+    
+    if (!modal || !confirmBtn) {
+        console.error('Delete modal elements not found');
+        return;
+    }
+    
+    // Disabilita bottone durante eliminazione
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Eliminazione in corso...';
+    
+    try {
+        const response = await fetch(`${window.location.origin}/api/sleep/data`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            let errorMessage = `HTTP error! status: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.detail || errorMessage;
+            } catch (e) {
+                const text = await response.text();
+                errorMessage = text.substring(0, 200) || errorMessage;
+            }
+            throw new Error(errorMessage);
+        }
+        
+        const result = await response.json();
+        
+        // Chiudi modal
+        modal.classList.remove('active');
+        
+        // Mostra messaggio di successo
+        if (window.showSuccess) {
+            window.showSuccess(`✅ ${result.message || `Eliminati ${result.records_deleted || 0} record`}`);
+        }
+        
+        // Ricarica dati per riflettere l'eliminazione
+        if (typeof window.loadSleepStatus === 'function') {
+            await window.loadSleepStatus();
+        }
+        
+    } catch (error) {
+        console.error('Error deleting all data:', error);
+        if (window.showError) {
+            window.showError('❌ Errore durante l\'eliminazione: ' + error.message);
+        }
+    } finally {
+        // Riabilita bottone
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Sì, Elimina Tutto';
+    }
+}
+
+// Esponi funzioni globalmente
+window.confirmDeleteAllData = confirmDeleteAllData;
+window.cancelDeleteAllData = cancelDeleteAllData;
+window.deleteAllData = deleteAllData;
 

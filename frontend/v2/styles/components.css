@@ -172,8 +172,14 @@
 }
 
 .debt-value.optimal { color: var(--color-green); }
-.debt-value.slight { color: var(--color-yellow); }
-.debt-value.large { color: var(--color-orange); }
+.debt-value.slight { 
+    color: var(--color-yellow);
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+}
+.debt-value.large { 
+    color: var(--color-orange);
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+}
 .debt-value.critical { color: var(--color-red); }
 
 /* Mini Card */
@@ -214,6 +220,15 @@
     font-size: var(--font-size-lg);
     font-weight: 700;
     white-space: nowrap;
+}
+
+/* Aumenta ombra dei valori gialli/arancioni nella mini card */
+.debt-level-slight .mini-card-value {
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+}
+
+.debt-level-large .mini-card-value {
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
 }
 
 .mini-card-chevron {
