@@ -17,6 +17,7 @@ from db.database import (
     delete_all_sleep_data
 )
 from etl.garmin_sync import sync_sleep_data
+from etl.auto_sync import start_auto_sync, stop_auto_sync, is_auto_sync_active, get_auto_sync_status
 
 # Configure logging
 logging.basicConfig(
@@ -43,9 +44,18 @@ async def lifespan(app: FastAPI):
     migrated = migrate_settings_from_env()
     if migrated:
         print("Settings migrated from .env to database")
+    
+    # Avvia sync automatico in background
+    # Il lifespan è già in un contesto asyncio, quindi possiamo creare il task direttamente
+    import asyncio
+    start_auto_sync()
+    print("Auto-sync scheduler started")
+    
     yield
-    # Shutdown (if needed in future)
-    pass
+    
+    # Shutdown
+    stop_auto_sync()
+    print("Auto-sync scheduler stopped")
 
 
 # Initialize FastAPI app
@@ -138,7 +148,13 @@ async def ui_v2():
 
 @app.get("/api/sleep/status", response_model=SleepStatusResponse)
 async def get_sleep_status():
-    """Get current sleep status and statistics."""
+    """Get current sleep status and statistics.
+    
+    Automatically attempts to sync today's sleep data if:
+    - Current time is between 6:00 AM and 23:59
+    - Today's data is missing
+    - use_dummy_data is False
+    """
     # Get current use_dummy_data setting to determine if we should include example data
     from backend.config import get_user_settings_from_db
     settings = get_user_settings_from_db()
@@ -146,6 +162,31 @@ async def get_sleep_status():
     
     # Get statistics (include example data if use_dummy_data is True)
     stats = get_sleep_statistics(include_example=use_dummy_data)
+    
+    auto_sync_attempted = False
+    
+    # Sync forzato all'apertura app: se manca il dato di oggi e siamo tra le 6:00 e le 23:59
+    if not use_dummy_data and not stats.get("has_today_data", False):
+        from datetime import datetime
+        now = datetime.now()
+        current_hour = now.hour
+        
+        # Verifica che sia tra le 6:00 e le 23:59
+        if 6 <= current_hour <= 23:
+            logger.info("Sync forzato all'apertura app: tentativo di sincronizzazione del dato di oggi...")
+            auto_sync_attempted = True
+            
+            try:
+                # Sync solo 1 giorno (il dato di oggi)
+                sync_result = sync_sleep_data(days=1, use_dummy_data=False)
+                if sync_result.get("success"):
+                    logger.info(f"Sync forzato: successo - {sync_result.get('records_synced', 0)} record sincronizzati")
+                    # Ricarica le statistiche dopo il sync
+                    stats = get_sleep_statistics(include_example=use_dummy_data)
+                else:
+                    logger.warning(f"Sync forzato: fallito - {sync_result.get('message', 'Unknown error')}")
+            except Exception as sync_error:
+                logger.warning(f"Sync forzato: errore durante la sincronizzazione - {sync_error}")
     
     # Get recent data (uses STATS_WINDOW_DAYS as default, include example data if use_dummy_data is True)
     recent_data = read_sleep_data(include_example=use_dummy_data)
@@ -159,6 +200,9 @@ async def get_sleep_status():
     
     from backend.config import STATS_WINDOW_DAYS
     
+    # Verifica se il sync automatico schedulato è attivo
+    auto_sync_active = is_auto_sync_active()
+    
     return SleepStatusResponse(
         last_sync=last_sync,
         current_debt=stats["current_debt"],
@@ -168,7 +212,9 @@ async def get_sleep_status():
         recent_data=[SleepData(**item) for item in recent_data],
         has_today_data=stats["has_today_data"],
         stats_window_days=STATS_WINDOW_DAYS(),
-        total_real_data_days=total_real_data_days
+        total_real_data_days=total_real_data_days,
+        auto_sync_attempted=auto_sync_attempted,
+        auto_sync_active=auto_sync_active
     )
 
 
@@ -487,28 +533,32 @@ async def update_settings(settings: SettingsRequest):
             if available_days < settings.stats_window_days:
                 fallback_windows = [10, 7] if settings.stats_window_days == 14 else ([7] if settings.stats_window_days == 10 else [])
                 
-                for fallback_window in fallback_windows:
-                    # Try to sync one extra day if today has no data
-                    fallback_days_to_sync = fallback_window if today_has_data else (fallback_window + 1)
-                    logger.info(f"Trying to sync {fallback_days_to_sync} days for fallback window of {fallback_window} days...")
-                    try:
-                        fallback_sync_result = sync_sleep_data(days=fallback_days_to_sync, use_dummy_data=False)
-                        if fallback_sync_result.get("success"):
-                            fallback_available = count_available_days_in_window(fallback_window, include_example=settings.use_dummy_data)
+                if not fallback_windows:
+                    # No fallback available (stats_window_days is already 7, the minimum)
+                    logger.warning(f"Insufficient data for {settings.stats_window_days} days window ({available_days} days available). No fallback available as {settings.stats_window_days} is already the minimum window size.")
+                else:
+                    for fallback_window in fallback_windows:
+                        # Try to sync one extra day if today has no data
+                        fallback_days_to_sync = fallback_window if today_has_data else (fallback_window + 1)
+                        logger.info(f"Trying to sync {fallback_days_to_sync} days for fallback window of {fallback_window} days...")
+                        try:
+                            fallback_sync_result = sync_sleep_data(days=fallback_days_to_sync, use_dummy_data=False)
+                            if fallback_sync_result.get("success"):
+                                fallback_available = count_available_days_in_window(fallback_window, include_example=settings.use_dummy_data)
+                                if fallback_available >= fallback_window:
+                                    logger.warning(f"Insufficient data for {settings.stats_window_days} days. Falling back to {fallback_window} days window.")
+                                    settings.stats_window_days = fallback_window
+                                    available_days = fallback_available
+                                    break
+                        except Exception as fallback_sync_error:
+                            logger.warning(f"Fallback sync failed: {fallback_sync_error}")
+                            # Check if we have enough data anyway
+                            fallback_available = count_available_days_in_window(fallback_window)
                             if fallback_available >= fallback_window:
                                 logger.warning(f"Insufficient data for {settings.stats_window_days} days. Falling back to {fallback_window} days window.")
                                 settings.stats_window_days = fallback_window
                                 available_days = fallback_available
                                 break
-                    except Exception as fallback_sync_error:
-                        logger.warning(f"Fallback sync failed: {fallback_sync_error}")
-                        # Check if we have enough data anyway
-                        fallback_available = count_available_days_in_window(fallback_window)
-                        if fallback_available >= fallback_window:
-                            logger.warning(f"Insufficient data for {settings.stats_window_days} days. Falling back to {fallback_window} days window.")
-                            settings.stats_window_days = fallback_window
-                            available_days = fallback_available
-                            break
                 
                 # If even 7 days are not available, return error
                 if available_days < 7:

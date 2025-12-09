@@ -24,6 +24,8 @@ class SleepStatusResponse(BaseModel):
     has_today_data: bool  # True if sleep data exists for today
     stats_window_days: int  # Number of days used for statistics calculation
     total_real_data_days: int = 0  # Total number of consecutive days with real data available
+    auto_sync_attempted: bool = False  # True if sync was attempted during this request (forced sync on app open)
+    auto_sync_active: bool = False  # True if automatic scheduled sync is active
 
 
 class SyncResponse(BaseModel):

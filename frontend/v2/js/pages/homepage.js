@@ -123,20 +123,54 @@ function updateUI(data) {
         }
     }
     
+    // Mostra/nascondi avviso sincronizzazione in corso
+    // (mostra quando il sync è stato tentato all'apertura dell'app)
+    const syncingTodayWarning = document.getElementById('syncing-today-warning');
+    if (syncingTodayWarning) {
+        if (data.auto_sync_attempted === true) {
+            syncingTodayWarning.style.display = 'block';
+            // Se il sync ha recuperato i dati, nascondi il messaggio dopo un breve delay
+            if (data.has_today_data === true) {
+                setTimeout(() => {
+                    syncingTodayWarning.style.display = 'none';
+                }, 2000); // Nascondi dopo 2 secondi se il sync ha avuto successo
+            }
+        } else {
+            syncingTodayWarning.style.display = 'none';
+        }
+    }
+    
     // Mostra/nascondi avviso dato oggi mancante
+    // (mostra solo se il dato è mancante DOPO che il sync è stato tentato o se non è stato tentato)
     const missingTodayWarning = document.getElementById('missing-today-warning');
     const missingTodayMessage = document.getElementById('missing-today-message');
     if (missingTodayWarning && missingTodayMessage) {
         if (data.has_today_data === false && data.days_tracked > 0) {
-            // Formatta data di oggi in italiano
-            const today = new Date();
-            const todayFormatted = today.toLocaleDateString('it-IT', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            });
-            missingTodayMessage.textContent = `Non ci sono ancora dati di sonno per oggi ${todayFormatted}. Il calcolo del debito esclude la giornata odierna fino a quando non saranno disponibili i dati.`;
-            missingTodayWarning.style.display = 'block';
+            // Se il sync è stato tentato ma non ha recuperato dati, mostra l'avviso dopo un breve delay
+            // per dare tempo al messaggio di sincronizzazione di essere visibile
+            if (data.auto_sync_attempted === true) {
+                setTimeout(() => {
+                    // Formatta data di oggi in italiano
+                    const today = new Date();
+                    const todayFormatted = today.toLocaleDateString('it-IT', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                    missingTodayMessage.textContent = `Non ci sono ancora dati di sonno per oggi ${todayFormatted}. Il calcolo del debito esclude la giornata odierna fino a quando non saranno disponibili i dati.`;
+                    missingTodayWarning.style.display = 'block';
+                }, 2000); // Mostra dopo 2 secondi se il sync non ha recuperato dati
+            } else {
+                // Formatta data di oggi in italiano
+                const today = new Date();
+                const todayFormatted = today.toLocaleDateString('it-IT', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                missingTodayMessage.textContent = `Non ci sono ancora dati di sonno per oggi ${todayFormatted}. Il calcolo del debito esclude la giornata odierna fino a quando non saranno disponibili i dati.`;
+                missingTodayWarning.style.display = 'block';
+            }
         } else {
             missingTodayWarning.style.display = 'none';
         }

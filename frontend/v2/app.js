@@ -57,6 +57,7 @@ async function loadSettings() {
 
 /**
  * Carica dati sleep status dall'API
+ * L'auto-sync mattutino è gestito automaticamente dal backend se necessario
  */
 async function loadSleepStatus() {
     try {
