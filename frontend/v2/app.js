@@ -148,20 +148,25 @@ function formatDebt(hours) {
 
 /**
  * Formatta ore in "Xh Ym"
+ * Preserva il segno negativo se presente (per debito giornaliero negativo = surplus)
  */
 function formatHoursMinutes(hours) {
-    const h = Math.floor(Math.abs(hours));
-    const m = Math.round((Math.abs(hours) - h) * 60);
+    const h = parseFloat(hours);
+    const hoursInt = Math.floor(Math.abs(h));
+    const minutes = Math.round((Math.abs(h) - hoursInt) * 60);
     
-    if (h === 0 && m === 0) {
+    // Gestisci valori negativi (per debito giornaliero negativo = surplus)
+    const sign = h < 0 ? '-' : '';
+    
+    if (hoursInt === 0 && minutes === 0) {
         return '0h';
     }
     
-    if (m === 0) {
-        return `${h}h`;
+    if (minutes === 0) {
+        return `${sign}${hoursInt}h`;
     }
     
-    return `${h}h ${m}m`;
+    return `${sign}${hoursInt}h ${minutes}m`;
 }
 
 /**

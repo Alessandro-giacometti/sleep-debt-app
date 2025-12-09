@@ -215,4 +215,3 @@ function updateUI(data) {
 // Esponi funzioni globalmente
 window.updateHeaderDate = updateHeaderDate;
 window.updateUI = updateUI;
-

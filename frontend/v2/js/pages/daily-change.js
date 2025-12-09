@@ -128,11 +128,15 @@ function updateDailyChangeTable(data) {
         
         // Formatta differenza (debt giornaliero)
         const debt = item.debt || 0;
-        const debtFormatted = formatHoursMinutes(debt);
+        // formatHoursMinutes preserva già il segno negativo, quindi aggiungiamo solo '+' per valori positivi
+        let debtFormatted = formatHoursMinutes(debt);
         const debtClass = debt > 0 ? 'daily-change-increment-positive' : 
                          debt < 0 ? 'daily-change-increment-negative' : 
                          'daily-change-increment-neutral';
-        const debtSign = debt > 0 ? '+' : '';
+        // Aggiungi solo il segno '+' per valori positivi (deficit), i negativi hanno già il segno '-' dalla funzione
+        if (debt > 0 && !debtFormatted.startsWith('+')) {
+            debtFormatted = '+' + debtFormatted;
+        }
         
         // Formatta debito cumulativo
         const cumulativeDebtFormatted = formatHoursMinutes(cumulativeDebtDisplay);
@@ -154,7 +158,7 @@ function updateDailyChangeTable(data) {
                 <td>${sleepHours}</td>
                 <td>
                     <span class="daily-change-increment ${debtClass}">
-                        ${debtSign}${debtFormatted}
+                        ${debtFormatted}
                     </span>
                 </td>
                 <td>
