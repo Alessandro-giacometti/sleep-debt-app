@@ -36,6 +36,21 @@ function showHomepage() {
         dailySleepPage.classList.remove('active');
     }
     
+    // Scrolla in alto per evitare scroll automatico verso il basso
+    // Ora che la pagina è position: fixed, scrolliamo l'elemento della pagina
+    requestAnimationFrame(() => {
+        const homepageEl = document.getElementById('homepage');
+        if (homepageEl) {
+            homepageEl.scrollTop = 0;
+        }
+        // Doppio check dopo un breve delay per mobile
+        setTimeout(() => {
+            if (homepageEl) {
+                homepageEl.scrollTop = 0;
+            }
+        }, 50);
+    });
+    
     // Aggiorna navbar
     document.querySelectorAll('.navbar-item').forEach(item => {
         item.classList.remove('active');
@@ -71,7 +86,22 @@ function showSettings() {
     });
     
     document.getElementById('homepage').classList.add('hidden');
-    document.getElementById('settings-page').classList.add('active');
+    const settingsPageEl = document.getElementById('settings-page');
+    settingsPageEl.classList.add('active');
+    
+    // Scrolla in alto per evitare scroll automatico verso il basso
+    // Ora che la pagina è position: fixed, scrolliamo l'elemento della pagina
+    requestAnimationFrame(() => {
+        if (settingsPageEl) {
+            settingsPageEl.scrollTop = 0;
+        }
+        // Doppio check dopo un breve delay per mobile
+        setTimeout(() => {
+            if (settingsPageEl) {
+                settingsPageEl.scrollTop = 0;
+            }
+        }, 50);
+    });
     
     // Aggiorna navbar
     document.querySelectorAll('.navbar-item').forEach(item => {

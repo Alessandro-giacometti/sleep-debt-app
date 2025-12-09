@@ -3,6 +3,15 @@
 /* Pagina Impostazioni */
 .settings-page {
     display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 60px; /* Lascia spazio per navbar */
+    background: var(--color-background);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    z-index: 100;
 }
 
 .settings-page.active {
@@ -889,6 +898,15 @@
 /* Homepage */
 .homepage {
     display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 60px; /* Lascia spazio per navbar */
+    background: var(--color-background);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    z-index: 100;
 }
 
 .homepage.hidden {
