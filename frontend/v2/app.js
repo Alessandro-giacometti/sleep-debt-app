@@ -71,7 +71,10 @@ async function loadSleepStatus() {
             current_debt: data.current_debt,
             days_tracked: data.days_tracked,
             total_sleep_hours: data.total_sleep_hours,
-            recent_data_count: data.recent_data ? data.recent_data.length : 0
+            recent_data_count: data.recent_data ? data.recent_data.length : 0,
+            has_today_data: data.has_today_data,
+            auto_sync_attempted: data.auto_sync_attempted,
+            auto_sync_active: data.auto_sync_active
         });
         
         sleepData = data;

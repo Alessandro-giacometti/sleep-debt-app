@@ -135,6 +135,8 @@ function updateUI(data) {
                     syncingTodayWarning.style.display = 'none';
                 }, 2000); // Nascondi dopo 2 secondi se il sync ha avuto successo
             }
+            // Se il sync è fallito (has_today_data === false), il messaggio verrà nascosto
+            // quando viene mostrato l'avviso di dati mancanti (vedi sotto)
         } else {
             syncingTodayWarning.style.display = 'none';
         }
@@ -150,6 +152,10 @@ function updateUI(data) {
             // per dare tempo al messaggio di sincronizzazione di essere visibile
             if (data.auto_sync_attempted === true) {
                 setTimeout(() => {
+                    // Nascondi il messaggio di sincronizzazione prima di mostrare l'avviso di dati mancanti
+                    if (syncingTodayWarning) {
+                        syncingTodayWarning.style.display = 'none';
+                    }
                     // Formatta data di oggi in italiano
                     const today = new Date();
                     const todayFormatted = today.toLocaleDateString('it-IT', {

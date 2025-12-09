@@ -45,11 +45,36 @@ def _get_next_sync_times() -> list[time]:
     return sync_times
 
 
+def _get_next_available_sync_time(after_time: Optional[time] = None) -> Optional[time]:
+    """Trova il prossimo slot di sync disponibile dopo l'ora specificata.
+    
+    Args:
+        after_time: Ora dopo cui cercare il prossimo slot. Se None, usa l'ora corrente.
+    
+    Returns:
+        Prossimo time slot disponibile, o None se non ce ne sono più oggi.
+    """
+    if after_time is None:
+        after_time = datetime.now().time()
+    
+    sync_times = _get_next_sync_times()
+    
+    # Trova il primo slot dopo l'ora specificata
+    for sync_time in sync_times:
+        if after_time < sync_time:
+            return sync_time
+    
+    # Nessun slot disponibile oggi
+    return None
+
+
 def _should_run_sync_now() -> tuple[bool, Optional[time]]:
     """Verifica se dovremmo eseguire un sync ora.
     
     Returns:
         Tuple (should_run, next_sync_time)
+        - should_run: True se dovremmo eseguire il sync ora
+        - next_sync_time: Prossimo slot disponibile (può essere quello corrente se should_run=True)
     """
     now = datetime.now()
     current_time = now.time()
@@ -163,7 +188,7 @@ async def _auto_sync_loop():
                     continue
             
             # Verifica se dovremmo eseguire un sync ora
-            should_run, next_sync_time = _should_run_sync_now()
+            should_run, current_sync_time = _should_run_sync_now()
             
             if should_run:
                 # Esegui il sync
@@ -171,19 +196,29 @@ async def _auto_sync_loop():
                 if success:
                     # Se il sync ha recuperato il dato, aspetta fino a domani
                     continue
+                # Se il sync è fallito, trova il prossimo slot disponibile (non quello corrente)
+                # Aggiungiamo 1 minuto all'ora corrente per assicurarci di trovare il prossimo slot
+                now_after_failure = datetime.now()
+                current_time_after_failure = now_after_failure.time()
+                # Trova il prossimo slot dopo quello corrente
+                next_sync_time = _get_next_available_sync_time(current_time_after_failure)
+            else:
+                # Non è l'ora di sync, usa il prossimo slot calcolato
+                next_sync_time = current_sync_time
             
             # Calcola il tempo fino al prossimo sync
             now = datetime.now()
             if next_sync_time:
                 next_sync_datetime = datetime.combine(now.date(), next_sync_time)
-                # Se il prossimo sync è già passato oggi, passa a domani
-                if next_sync_datetime <= now:
+                # Se il prossimo sync è già passato oggi (o non c'è più), passa a domani
+                if next_sync_datetime <= now or next_sync_time is None:
                     next_sync_datetime = datetime.combine(now.date() + timedelta(days=1), time(7, 0))
                 
                 wait_seconds = (next_sync_datetime - now).total_seconds()
             else:
-                # Default: aspetta 1 ora
-                wait_seconds = 3600
+                # Nessun slot disponibile oggi, aspetta fino a domani alle 7:00
+                tomorrow_7am = datetime.combine(now.date() + timedelta(days=1), time(7, 0))
+                wait_seconds = (tomorrow_7am - now).total_seconds()
             
             # Aspetta fino al prossimo sync (max 1 ora per evitare problemi)
             wait_seconds = min(wait_seconds, 3600)
