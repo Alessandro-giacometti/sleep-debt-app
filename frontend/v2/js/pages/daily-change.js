@@ -11,6 +11,18 @@ function showDailyChangePage() {
     dailyChangePage.classList.remove('hidden');
     dailyChangePage.classList.add('active');
     
+    // Scrolla in alto per evitare scroll automatico verso il basso
+    requestAnimationFrame(() => {
+        if (dailyChangePage) {
+            dailyChangePage.scrollTop = 0;
+        }
+        setTimeout(() => {
+            if (dailyChangePage) {
+                dailyChangePage.scrollTop = 0;
+            }
+        }, 50);
+    });
+    
     // Carica e mostra i dati
     loadDailyChangeData();
 }

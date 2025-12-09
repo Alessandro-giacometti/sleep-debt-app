@@ -14,6 +14,18 @@ function showDailySleepPage() {
     dailySleepPage.classList.remove('hidden');
     dailySleepPage.classList.add('active');
     
+    // Scrolla in alto per evitare scroll automatico verso il basso
+    requestAnimationFrame(() => {
+        if (dailySleepPage) {
+            dailySleepPage.scrollTop = 0;
+        }
+        setTimeout(() => {
+            if (dailySleepPage) {
+                dailySleepPage.scrollTop = 0;
+            }
+        }, 50);
+    });
+    
     // Inizializza con la finestra temporale corrente o default
     if (!currentDailySleepDays) {
         currentDailySleepDays = window.sleepData?.stats_window_days || 10;

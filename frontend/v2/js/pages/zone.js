@@ -11,6 +11,18 @@ function showZonePage() {
     zonePage.classList.remove('hidden');
     zonePage.classList.add('active');
     
+    // Scrolla in alto per evitare scroll automatico verso il basso
+    requestAnimationFrame(() => {
+        if (zonePage) {
+            zonePage.scrollTop = 0;
+        }
+        setTimeout(() => {
+            if (zonePage) {
+                zonePage.scrollTop = 0;
+            }
+        }, 50);
+    });
+    
     // Aggiorna valore debito nella pagina zone
     if (window.sleepData) {
         const debtHours = window.sleepData.current_debt || 0;

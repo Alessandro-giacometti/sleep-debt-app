@@ -4,7 +4,21 @@
  * Gestione grafico fullscreen
  */
 async function openChartFullscreen() {
-    document.getElementById('chart-fullscreen').classList.add('active');
+    const chartFullscreen = document.getElementById('chart-fullscreen');
+    chartFullscreen.classList.add('active');
+    
+    // Scrolla in alto per evitare scroll automatico verso il basso
+    requestAnimationFrame(() => {
+        if (chartFullscreen) {
+            chartFullscreen.scrollTop = 0;
+        }
+        setTimeout(() => {
+            if (chartFullscreen) {
+                chartFullscreen.scrollTop = 0;
+            }
+        }, 50);
+    });
+    
     // Inizializza con la finestra temporale corrente o default
     if (!window.currentChartDays) {
         window.currentChartDays = window.sleepData?.stats_window_days || 10;
