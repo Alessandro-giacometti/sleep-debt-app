@@ -113,7 +113,7 @@
 
             <!-- Card Dormi Oggi e Daily Change -->
             <div class="info-cards">
-                <div class="info-card">
+                <div class="info-card" onclick="showDailySleepPage()">
                     <div class="info-card-content">
                         <div class="info-card-label">Ore dormite oggi</div>
                         <div class="info-card-value" id="today-sleep">-</div>
@@ -382,6 +382,32 @@
         </div>
     </div>
 
+    <!-- Pagina Daily Sleep -->
+    <div id="daily-sleep-page" class="daily-sleep-page">
+        <div class="daily-sleep-page-header">
+            <button class="daily-sleep-page-back" onclick="closeDailySleepPage()">‹</button>
+            <h2 class="daily-sleep-page-title">Ore dormite per giorno</h2>
+        </div>
+
+        <div class="daily-sleep-content">
+            <div class="card">
+                <div class="daily-sleep-target-info" id="daily-sleep-target-info">
+                    Target sonno: <span id="daily-sleep-target-value">-</span>
+                </div>
+                <div class="daily-sleep-chart-container">
+                    <canvas id="daily-sleep-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="daily-sleep-selector">
+                <button class="daily-sleep-selector-btn" id="daily-sleep-btn-7" onclick="selectDailySleepDays(7)">7 Giorni</button>
+                <button class="daily-sleep-selector-btn" id="daily-sleep-btn-10" onclick="selectDailySleepDays(10)">10 Giorni</button>
+                <button class="daily-sleep-selector-btn" id="daily-sleep-btn-14" onclick="selectDailySleepDays(14)">14 Giorni</button>
+                <button class="daily-sleep-selector-btn" id="daily-sleep-btn-30" onclick="selectDailySleepDays(30)">30 Giorni</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Pagina Grafico Fullscreen -->
     <div id="chart-fullscreen" class="chart-fullscreen">
         <div class="chart-fullscreen-header">
@@ -473,6 +499,7 @@
     <script src="/static/v2/js/pages/zone.js"></script>
     <script src="/static/v2/js/pages/chart.js"></script>
     <script src="/static/v2/js/pages/daily-change.js"></script>
+    <script src="/static/v2/js/pages/daily-sleep.js"></script>
     <script src="/static/v2/charts.js"></script>
 </body>
 </html>

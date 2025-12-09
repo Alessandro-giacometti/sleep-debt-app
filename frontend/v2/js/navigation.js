@@ -31,6 +31,10 @@ function showHomepage() {
     if (dailyChangePage) {
         dailyChangePage.classList.remove('active');
     }
+    const dailySleepPage = document.getElementById('daily-sleep-page');
+    if (dailySleepPage) {
+        dailySleepPage.classList.remove('active');
+    }
     
     // Aggiorna navbar
     document.querySelectorAll('.navbar-item').forEach(item => {
@@ -55,6 +59,10 @@ function showSettings() {
     const dailyChangePage = document.getElementById('daily-change-page');
     if (dailyChangePage) {
         dailyChangePage.classList.remove('active');
+    }
+    const dailySleepPage = document.getElementById('daily-sleep-page');
+    if (dailySleepPage) {
+        dailySleepPage.classList.remove('active');
     }
     
     // Chiudi tutte le sub-pagine delle impostazioni (torna alla pagina principale delle impostazioni)
