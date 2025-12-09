@@ -1095,11 +1095,236 @@
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
+/* Pagina Daily Change */
+.daily-change-page {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 60px; /* Lascia spazio per navbar */
+    background: var(--color-background);
+    z-index: 2000;
+    overflow-y: auto;
+}
+
+.daily-change-page.active {
+    display: block;
+}
+
+.daily-change-page-header {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-md);
+    background: var(--color-background);
+    border-bottom: 1px solid var(--color-gray-medium);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.daily-change-page-back {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: none;
+    background: var(--color-gray-light);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xl);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    margin-right: var(--spacing-sm);
+    font-weight: 600;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.daily-change-page-back:active {
+    background: var(--color-gray-medium);
+    transform: scale(0.95);
+}
+
+.daily-change-page-title {
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    flex: 1;
+    text-align: center;
+    margin-right: 36px; /* Compensa il pulsante back */
+}
+
+.daily-change-content {
+    padding: var(--spacing-md);
+}
+
+.daily-change-target-info {
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    background: var(--color-gray-light);
+    border-radius: var(--radius-sm);
+    text-align: center;
+}
+
+.daily-change-target-info #daily-change-target-value {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.daily-change-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.daily-change-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+    table-layout: fixed;
+}
+
+.daily-change-table thead {
+    background: var(--color-gray-light);
+}
+
+.daily-change-table th {
+    padding: var(--spacing-xs) 4px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 2px solid var(--color-gray-medium);
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.3;
+}
+
+.daily-change-table th:nth-child(1) {
+    width: 24%;
+}
+
+.daily-change-table th:nth-child(2) {
+    width: 22%;
+}
+
+.daily-change-table th:nth-child(3) {
+    width: 27%;
+}
+
+.daily-change-table th:nth-child(4) {
+    width: 27%;
+}
+
+.daily-change-table td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-bottom: 1px solid var(--color-gray-light);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.daily-change-table td:nth-child(1) {
+    text-align: left;
+}
+
+.daily-change-table td:nth-child(2) {
+    white-space: normal;
+    word-break: break-word;
+    text-align: center;
+}
+
+.daily-change-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.daily-change-table tbody tr:active {
+    background: var(--color-gray-light);
+}
+
+.daily-change-increment {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    min-width: 60px;
+    text-align: center;
+}
+
+.daily-change-increment-positive {
+    background: rgba(220, 53, 69, 0.15);
+    color: var(--color-red);
+}
+
+.daily-change-increment-negative {
+    background: rgba(40, 167, 69, 0.15);
+    color: var(--color-green);
+}
+
+.daily-change-increment-neutral {
+    background: var(--color-gray-light);
+    color: var(--color-text-secondary);
+}
+
+.daily-change-example-badge {
+    display: inline-block;
+    margin-left: var(--spacing-xs);
+    padding: 2px 4px;
+    background: rgba(255, 193, 7, 0.2);
+    color: #856404;
+    border-radius: var(--radius-sm);
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.daily-change-cumulative-debt {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    background: var(--color-gray-light);
+    min-width: 60px;
+    text-align: center;
+}
+
+.daily-change-cumulative-debt.debt-optimal {
+    background: var(--color-gray-light);
+    color: var(--color-green);
+}
+
+.daily-change-cumulative-debt.debt-slight {
+    background: var(--color-gray-light);
+    color: var(--color-yellow);
+}
+
+.daily-change-cumulative-debt.debt-large {
+    background: var(--color-gray-light);
+    color: var(--color-orange);
+}
+
+.daily-change-cumulative-debt.debt-critical {
+    background: var(--color-gray-light);
+    color: var(--color-red);
+}
+
 /* Responsive */
 @media (min-width: 768px) {
     .container {
         max-width: 600px;
         margin: 0 auto;
+    }
+    
+    .daily-change-table {
+        font-size: var(--font-size-base);
     }
 }
 

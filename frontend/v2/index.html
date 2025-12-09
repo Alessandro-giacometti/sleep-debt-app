@@ -79,7 +79,7 @@
                 <div class="debt-value" id="debt-value">-</div>
             </div>
 
-            <!-- Mini Card Zona e Cambiamento -->
+            <!-- Mini Card Zona e Target -->
             <div class="mini-cards">
                 <div class="mini-card" onclick="showZonePage()">
                     <div class="mini-card-content">
@@ -88,10 +88,10 @@
                     </div>
                     <div class="mini-card-chevron">›</div>
                 </div>
-                <div class="mini-card">
+                <div class="mini-card" onclick="openTargetSettings()">
                     <div class="mini-card-content">
-                        <div class="mini-card-label">Daily Change</div>
-                        <div class="mini-card-value" id="today-change">-</div>
+                        <div class="mini-card-label">Target sonno giornaliero</div>
+                        <div class="mini-card-value" id="target-sleep">-</div>
                     </div>
                     <div class="mini-card-chevron">›</div>
                 </div>
@@ -111,7 +111,7 @@
                 </div>
             </div>
 
-            <!-- Card Dormi Oggi e Obiettivo -->
+            <!-- Card Dormi Oggi e Daily Change -->
             <div class="info-cards">
                 <div class="info-card">
                     <div class="info-card-content">
@@ -120,10 +120,10 @@
                     </div>
                     <div class="info-card-chevron">›</div>
                 </div>
-                <div class="info-card" onclick="openTargetSettings()">
+                <div class="info-card" onclick="showDailyChangePage()">
                     <div class="info-card-content">
-                        <div class="info-card-label">Target sonno giornaliero</div>
-                        <div class="info-card-value" id="target-sleep">-</div>
+                        <div class="info-card-label">Daily Change</div>
+                        <div class="info-card-value" id="today-change">-</div>
                     </div>
                     <span class="info-card-chevron">›</span>
                 </div>
@@ -347,6 +347,41 @@
         </div>
     </div>
 
+    <!-- Pagina Daily Change -->
+    <div id="daily-change-page" class="daily-change-page">
+        <div class="daily-change-page-header">
+            <button class="daily-change-page-back" onclick="closeDailyChangePage()">‹</button>
+            <h2 class="daily-change-page-title">Daily Change</h2>
+        </div>
+
+        <div class="daily-change-content">
+            <div class="card">
+                <div class="daily-change-target-info" id="daily-change-target-info">
+                    Target sonno: <span id="daily-change-target-value">-</span>
+                </div>
+                <div class="daily-change-table-container">
+                    <table class="daily-change-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Durata Sonno</th>
+                                <th>Differenza</th>
+                                <th>Debito Sonno</th>
+                            </tr>
+                        </thead>
+                        <tbody id="daily-change-table-body">
+                            <tr>
+                                <td colspan="4" style="text-align: center; padding: 20px; color: var(--color-text-secondary);">
+                                    Caricamento dati...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Pagina Grafico Fullscreen -->
     <div id="chart-fullscreen" class="chart-fullscreen">
         <div class="chart-fullscreen-header">
@@ -437,6 +472,7 @@
     <script src="/static/v2/js/pages/settings.js"></script>
     <script src="/static/v2/js/pages/zone.js"></script>
     <script src="/static/v2/js/pages/chart.js"></script>
+    <script src="/static/v2/js/pages/daily-change.js"></script>
     <script src="/static/v2/charts.js"></script>
 </body>
 </html>

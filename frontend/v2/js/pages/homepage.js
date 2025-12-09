@@ -54,30 +54,38 @@ function updateUI(data) {
         zoneMiniCard.classList.add(`debt-level-${debtInfo.class}`);
     }
     
-    // Aggiorna cambiamento odierno (calcolo semplificato)
+    // Aggiorna cambiamento odierno (mostra la differenza del giorno, cioè il debt giornaliero di oggi)
     const todayChangeEl = document.getElementById('today-change');
     if (data.recent_data && data.recent_data.length > 0) {
         const today = data.recent_data[0];
-        const yesterday = data.recent_data[1];
-        if (yesterday) {
-            const change = today.debt - yesterday.debt;
-            // Formato: "-3 h e 59 min" (con segno negativo se positivo, perché è una riduzione)
-            const changeAbs = Math.abs(change);
-            todayChangeEl.textContent = change < 0 ? `-${window.formatDebt(changeAbs)}` : `+${window.formatDebt(changeAbs)}`;
-            todayChangeEl.style.color = change < 0 ? 'var(--color-green)' : 'var(--color-orange)';
+        const debt = today.debt || 0;
+        
+        // Formatta la differenza (debt giornaliero)
+        const debtFormatted = window.formatHoursMinutes ? window.formatHoursMinutes(debt) : window.formatDebt(Math.abs(debt));
+        const debtSign = debt > 0 ? '+' : '';
+        
+        todayChangeEl.textContent = debt !== 0 ? `${debtSign}${debtFormatted}` : '0h';
+        
+        // Colore in base al segno
+        if (debt > 0) {
+            todayChangeEl.style.color = 'var(--color-red)'; // Deficit (positivo)
+        } else if (debt < 0) {
+            todayChangeEl.style.color = 'var(--color-green)'; // Surplus (negativo)
         } else {
-            todayChangeEl.textContent = '-';
+            todayChangeEl.style.color = 'var(--color-text-secondary)'; // Neutro
         }
     } else {
         todayChangeEl.textContent = '-';
+        todayChangeEl.style.color = '';
     }
     
-    // Aggiorna card "Ore dormite oggi"
+    // Aggiorna card "Ore dormite oggi" (formato compatto con "m" invece di "min")
     const todaySleepEl = document.getElementById('today-sleep');
     if (data.recent_data && data.recent_data.length > 0 && data.recent_data[0]) {
         const sleepHours = data.recent_data[0].sleep_hours;
         const targetHours = data.target_sleep_hours || 8;
-        todaySleepEl.textContent = window.formatDebt(sleepHours);
+        // Usa formatHoursMinutes per formato compatto (es. "8h 30m")
+        todaySleepEl.textContent = window.formatHoursMinutes ? window.formatHoursMinutes(sleepHours) : window.formatDebt(sleepHours);
         // Verde se >= target, rosso se < target
         todaySleepEl.style.color = sleepHours >= targetHours ? 'var(--color-green)' : 'var(--color-red)';
     } else {
@@ -134,9 +142,17 @@ function updateUI(data) {
                 setTimeout(() => {
                     syncingTodayWarning.style.display = 'none';
                 }, 2000); // Nascondi dopo 2 secondi se il sync ha avuto successo
+            } else if (data.has_today_data === false) {
+                // Se il sync è fallito (has_today_data === false), nascondi il messaggio dopo un delay
+                // Se days_tracked > 0, il messaggio verrà nascosto quando viene mostrato l'avviso di dati mancanti (vedi sotto)
+                // Se days_tracked === 0, nascondi comunque il messaggio dopo il delay (l'avviso "Nessun dato" è già visibile)
+                if (data.days_tracked === 0) {
+                    setTimeout(() => {
+                        syncingTodayWarning.style.display = 'none';
+                    }, 2000); // Nascondi dopo 2 secondi anche se non ci sono dati ancora
+                }
+                // Se days_tracked > 0, il messaggio verrà nascosto nel blocco sotto quando viene mostrato l'avviso di dati mancanti
             }
-            // Se il sync è fallito (has_today_data === false), il messaggio verrà nascosto
-            // quando viene mostrato l'avviso di dati mancanti (vedi sotto)
         } else {
             syncingTodayWarning.style.display = 'none';
         }

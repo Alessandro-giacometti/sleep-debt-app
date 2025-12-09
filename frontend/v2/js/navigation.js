@@ -13,6 +13,12 @@ function initNavigation() {
 function showHomepage() {
     document.getElementById('homepage').classList.remove('hidden');
     document.getElementById('settings-page').classList.remove('active');
+    
+    // Chiudi tutte le sub-pagine delle impostazioni
+    document.querySelectorAll('.settings-subpage').forEach(subpage => {
+        subpage.classList.remove('active');
+    });
+    
     const zonePage = document.getElementById('zone-page');
     if (zonePage) {
         zonePage.classList.remove('active');
@@ -20,6 +26,10 @@ function showHomepage() {
     const chartFullscreen = document.getElementById('chart-fullscreen');
     if (chartFullscreen) {
         chartFullscreen.classList.remove('active');
+    }
+    const dailyChangePage = document.getElementById('daily-change-page');
+    if (dailyChangePage) {
+        dailyChangePage.classList.remove('active');
     }
     
     // Aggiorna navbar
@@ -42,6 +52,15 @@ function showSettings() {
     if (chartFullscreen) {
         chartFullscreen.classList.remove('active');
     }
+    const dailyChangePage = document.getElementById('daily-change-page');
+    if (dailyChangePage) {
+        dailyChangePage.classList.remove('active');
+    }
+    
+    // Chiudi tutte le sub-pagine delle impostazioni (torna alla pagina principale delle impostazioni)
+    document.querySelectorAll('.settings-subpage').forEach(subpage => {
+        subpage.classList.remove('active');
+    });
     
     document.getElementById('homepage').classList.add('hidden');
     document.getElementById('settings-page').classList.add('active');
