@@ -4,6 +4,10 @@
  * Gestione grafico fullscreen
  */
 async function openChartFullscreen() {
+    // Forza scroll a 0 PRIMA di navigare
+    if (typeof forceScrollToTop === 'function') {
+        forceScrollToTop();
+    }
     // Usa il nuovo sistema di navigazione
     navigateTo('chart-fullscreen');
     

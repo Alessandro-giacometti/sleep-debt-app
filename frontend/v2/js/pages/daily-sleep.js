@@ -7,6 +7,10 @@ let currentDailySleepDays = 10; // Default a 10 giorni
  * Mostra pagina Daily Sleep
  */
 function showDailySleepPage() {
+    // Forza scroll a 0 PRIMA di navigare
+    if (typeof forceScrollToTop === 'function') {
+        forceScrollToTop();
+    }
     navigateTo('daily-sleep-page');
     
     // Inizializza con la finestra temporale corrente o default

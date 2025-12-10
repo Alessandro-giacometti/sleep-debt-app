@@ -4,6 +4,10 @@
  * Mostra pagina Daily Change
  */
 function showDailyChangePage() {
+    // Forza scroll a 0 PRIMA di navigare
+    if (typeof forceScrollToTop === 'function') {
+        forceScrollToTop();
+    }
     navigateTo('daily-change-page');
     loadDailyChangeData();
 }

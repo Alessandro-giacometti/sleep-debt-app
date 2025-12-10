@@ -31,6 +31,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (typeof initNavigation === 'function') {
         initNavigation();
     }
+    
+    // Inizializza sistema di navigazione (scroll, navbar, ecc.)
+    if (typeof initNavigationSystem === 'function') {
+        initNavigationSystem();
+    }
 });
 
 /**

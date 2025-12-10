@@ -4,6 +4,10 @@
  * Mostra pagina Zone
  */
 function showZonePage() {
+    // Forza scroll a 0 PRIMA di navigare
+    if (typeof forceScrollToTop === 'function') {
+        forceScrollToTop();
+    }
     navigateTo('zone-page');
     
     // Aggiorna valore debito nella pagina zone

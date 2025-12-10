@@ -449,9 +449,11 @@
     justify-content: space-around;
     align-items: center;
     padding: var(--spacing-sm) 0;
-    z-index: 10000; /* Z-index molto alto per essere sempre sopra tutto */
+    z-index: 10000 !important; /* Z-index molto alto per essere sempre sopra tutto */
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-    pointer-events: auto; /* Assicura che sia sempre cliccabile */
+    pointer-events: auto !important; /* Assicura che sia sempre cliccabile */
+    touch-action: manipulation; /* Migliora la risposta su mobile */
+    -webkit-tap-highlight-color: transparent; /* Rimuove highlight su tap mobile */
 }
 
 .navbar-item {
@@ -467,6 +469,10 @@
     border: none;
     background: none;
     cursor: pointer;
+    pointer-events: auto !important; /* Assicura che sia sempre cliccabile */
+    touch-action: manipulation; /* Migliora la risposta su mobile */
+    -webkit-tap-highlight-color: rgba(90, 200, 90, 0.2); /* Highlight verde su tap */
+    user-select: none; /* Previeni selezione testo su tap */
 }
 
 .navbar-item.active {
