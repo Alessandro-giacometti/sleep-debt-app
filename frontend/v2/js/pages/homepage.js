@@ -233,6 +233,17 @@ function updateUI(data) {
     }
 }
 
+/**
+ * Chiudi avviso dati sonno mancanti
+ */
+function closeMissingTodayWarning() {
+    const missingTodayWarning = document.getElementById('missing-today-warning');
+    if (missingTodayWarning) {
+        missingTodayWarning.style.display = 'none';
+    }
+}
+
 // Esponi funzioni globalmente
 window.updateHeaderDate = updateHeaderDate;
 window.updateUI = updateUI;
+window.closeMissingTodayWarning = closeMissingTodayWarning;

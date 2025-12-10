@@ -24,6 +24,16 @@
                     </div>
                     <div class="header-right">
                         <div class="header-date" id="header-date"></div>
+                        <div class="header-sync-container">
+                            <span class="header-sync-label">Sync now</span>
+                            <button class="header-sync-fab" id="sync-btn" onclick="syncData()" title="Sincronizza dati">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <polyline points="1 20 1 14 7 14"></polyline>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -49,6 +59,7 @@
 
             <!-- Avviso Dato Oggi Mancante -->
             <div class="card missing-today-warning" id="missing-today-warning" style="display: none;">
+                <button class="warning-close-btn" onclick="closeMissingTodayWarning()">×</button>
                 <div class="missing-today-warning-content">
                     <span class="missing-today-warning-icon">⚠️</span>
                     <div class="missing-today-warning-text">
@@ -71,7 +82,6 @@
 
             <!-- Card Debito Principale -->
             <div class="card debt-main-card" id="debt-main-card">
-                <button class="sync-btn-inline" id="sync-btn" onclick="syncData()">🔄</button>
                 <div class="debt-label">
                     <span class="debt-label-icon">🛏️</span>
                     <span>Sleep Debt</span>
